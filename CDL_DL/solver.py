@@ -81,7 +81,8 @@ class Solver(object):
         exe = sym.bind(xpu, args=args, args_grad=args_grad, aux_states=auxs)
 
         assert len(sym.list_arguments()) == len(exe.grad_arrays)
-        update_dict = {name: nd for name, nd in zip(sym.list_arguments(), exe.grad_arrays) if nd}
+        #print(exe.grad_arrays)
+        update_dict = {name: nd for name, nd in zip(sym.list_arguments(), exe.grad_arrays) if nd is not None}
         batch_size = input_buffs[0].shape[0]
         self.optimizer.rescale_grad = 1.0/batch_size
         self.optimizer.set_lr_mult(args_lrmult)
@@ -127,14 +128,14 @@ class Solver(object):
             except:
                 # means the end of an epoch
                 epoch += 1
-                theta = model.extract_feature(sym[0], args, auxs,
-                    data_iter, X.shape[0], xpu).values()[0]
+                theta = list(model.extract_feature(sym[0], args, auxs,
+                    data_iter, X.shape[0], xpu).values())[0]
                 # update U, V and get BCD loss
                 U, V, BCD_loss = BCD_one(R, U, V, theta,
                     lambda_u, lambda_v, dir_save, True)
                 # get recon' loss
-                Y = model.extract_feature(sym[1], args, auxs,
-                    data_iter, X.shape[0], xpu).values()[0]
+                Y = list(model.extract_feature(sym[1], args, auxs,
+                    data_iter, X.shape[0], xpu).values())[0]
                 Recon_loss = lambda_v/np.square(lambda_v_rt_old[0,0])*np.sum(np.square(Y-X))/2.0
                 print("Epoch %d - tr_err/bcd_err/rec_err: %.1f/%.1f/%.1f".format(epoch,
                     BCD_loss+Recon_loss, BCD_loss, Recon_loss))
@@ -181,8 +182,8 @@ class Solver(object):
         #        data_iter, X.shape[0], xpu).values()[0]
         #print Y
         #print Y.shape
-        theta = model.extract_feature(sym[0], args, auxs,
-            data_iter, X.shape[0], xpu).values()[0]
+        theta = list(model.extract_feature(sym[0], args, auxs,
+            data_iter, X.shape[0], xpu).values())[0]
         U, V, BCD_loss = BCD_one(R, U, V, theta, lambda_u, lambda_v,
             dir_save, True, 20)
         fp.close()

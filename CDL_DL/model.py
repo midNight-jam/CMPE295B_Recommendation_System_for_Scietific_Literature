@@ -46,7 +46,7 @@ class MXModel(object):
 
     def save(self, fname):
         args_save = {key: v.asnumpy() for key, v in self.args.items()}
-        with open(fname, 'w') as fout:
+        with open(fname, 'wb') as fout:
             pickle.dump(args_save, fout)
 
     def load(self, fname):

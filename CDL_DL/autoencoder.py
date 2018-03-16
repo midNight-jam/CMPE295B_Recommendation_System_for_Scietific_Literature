@@ -160,7 +160,11 @@ class AutoEncoderModel(model.MXModel):
 
     def finetune(self, X, R, V, lambda_v_rt, lambda_u, lambda_v, dir_save, batch_size, n_iter, optimizer, l_rate, decay, lr_scheduler=None):
         def l2_norm(label, pred):
-           return np.mean(np.square(label-pred))/2.0
+            print(type(label))
+            print(type(pred))
+            print(np.shape(label))
+            print(np.shape(pred))
+            return np.mean(np.square(label-pred))/2.0
         solver = Solver(optimizer, momentum=0.9, wd=decay, learning_rate=l_rate, lr_scheduler=lr_scheduler)
         solver.set_metric(mx.metric.CustomMetric(l2_norm))
         solver.set_monitor(Monitor(1000))
