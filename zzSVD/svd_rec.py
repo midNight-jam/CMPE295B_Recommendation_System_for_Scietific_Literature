@@ -3,13 +3,14 @@ import data
 
 nb_users = 5552	# users
 nb_products = 16981	# products
-nb_factors = 500	# no of latent factors
+nb_factors = 5000	# no of latent factors
 # max_rating = 1	# max possible rating for a paper
 # nb_rated_products = 5	# avg rated products per user
-top_k_products = 10	# top products considered for evaluating the rating
+top_k_products = 35
 
 uim = data.read_and_create_user_Matrix()
-
+print('shape of uim')
+print(uim.shape)
 graph = tf.Graph()
 
 with graph.as_default():
@@ -45,9 +46,10 @@ feed_dict = {
 
 best_items = session.run([best_items_t], feed_dict=feed_dict)
 print(type(best_items))
-
+# print('shape of best items')
+# print(best_items.shape)
 # Suggestions for user 10, 20
-for i in range(10, 20):
+for i in range(1, 10):
     print('User {}: {}'.format(i, best_items[0][i]))
 
 text_file = open("res_recom.txt", "w")
