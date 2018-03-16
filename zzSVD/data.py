@@ -55,28 +55,42 @@ def read_and_create_user_Matrix():
 
 #should return <class 'numpy.ndarray'> representation of the user library count
 def read_and_create_user_LibCount():
-	 user_lib = np.zeros(shape=(5552,1)) # both have +1 dimension
-	 # user_matrix = np.zeros((552, 16981), dtype=np.float32)
+	 fname = "Data/users.dat"
+	 user_lib = np.zeros(shape=(5552), dtype=np.int32) # both have +1 dimension
 
 	 user_id = 1
 	 for line in open(fname):
 	 	docs = line.split()
-	 	first = docs.pop(0)
- 		user_lib[user_id][0] = first
+	 	count = docs.pop(0)
+	 	user_lib[user_id] = count
 	 	user_id += 1
+	 user_lib = np.delete(user_lib, 0)
 	 return user_lib
+
+#should return <class 'numpy.ndarray'> representation of the user library count
+def read_and_create_paper_UserLibFreqCount():
+	 fname = "Data/items.dat"
+	 paper_lib = np.zeros(shape=(16981), dtype=np.int32) # both have +1 dimension
+	 paper_id = 1
+	 for line in open(fname):
+	 	users = line.split()
+	 	count = users.pop(0)
+	 	paper_lib[paper_id] = count
+	 	paper_id += 1
+	 paper_lib = np.delete(paper_lib, 0)
+	 return paper_lib
 
 # X = read_user_data()
 # X = read_user_data_ol()
 # X = read_user_df()
 # X = read_user_df()
-# X = read_and_create_user_LibCount()
+# X = read_and_create_paper_UserLibFreqCount()
 # print(X)
 # print(X.shape)
 # print(type(X))
-# print(X[0][0])
+# print(X[0])
 
 # print(type(X[0][0]))
 # print(type(X[0]))
 # print(np.array_str(X[0]))
-# print(["%.2f" % x for x in X[2]])
+# print(["%d" % x for x in X])
