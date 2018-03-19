@@ -33,11 +33,9 @@ biases = {
 
 def encoder(x):
     # Encoder Hidden layer with sigmoid activation #1
-    # layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['encoder_h1']), biases['encoder_b1']))
-    layer_1 = tf.nn.tanh(tf.add(tf.matmul(x, weights['encoder_h1']), biases['encoder_b1']))
+    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['encoder_h1']), biases['encoder_b1']))
     # Encoder Hidden layer with sigmoid activation #2
-    # layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['encoder_h2']), biases['encoder_b2']))
-    layer_2 = tf.nn.tanh(tf.add(tf.matmul(layer_1, weights['encoder_h2']), biases['encoder_b2']))
+    layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['encoder_h2']), biases['encoder_b2']))
     return layer_2
 
 
@@ -45,11 +43,9 @@ def encoder(x):
 
 def decoder(x):
     # Decoder Hidden layer with sigmoid activation #1
-    # layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['decoder_h1']), biases['decoder_b1']))
-    layer_1 = tf.nn.tanh(tf.add(tf.matmul(x, weights['decoder_h1']), biases['decoder_b1']))
+    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['decoder_h1']), biases['decoder_b1']))
     # Decoder Hidden layer with sigmoid activation #2
-    # layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['decoder_h2']), biases['decoder_b2']))
-    layer_2 = tf.nn.tanh(tf.add(tf.matmul(layer_1, weights['decoder_h2']), biases['decoder_b2']))
+    layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['decoder_h2']), biases['decoder_b2']))
     return layer_2
 
 
@@ -77,8 +73,8 @@ loss = tf.losses.sigmoid_cross_entropy(y_true, y_pred)
 
 
 # optimizer = tf.train.RMSPropOptimizer(0.003).minimize(loss)
-# optimizer = tf.train.AdamOptimizer(1e-4).minimize(loss)
-optimizer = tf.train.AdagradOptimizer(1e-4).minimize(loss)
+optimizer = tf.train.AdamOptimizer(learning_rate=0.001, beta1=0.9, beta2=0.1).minimize(loss)
+# optimizer = tf.train.AdagradOptimizer(1e-4).minimize(loss)
 
 
 predictions = pd.DataFrame()
@@ -98,7 +94,7 @@ local_init = tf.local_variables_initializer()
 
 with tf.Session() as session:
     epochs = 10
-    batch_size = 1000
+    batch_size = 55
 
     session.run(init)
     session.run(local_init)
