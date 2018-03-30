@@ -6,6 +6,10 @@ from numpy import genfromtxt
 # fname = "Data/users.dat"
 fname = "Data/cf-train-1-users.dat"
 # fname = "Data/fraction.dat"
+
+trimmed_users_count = 500
+trimmed_papers_count = 2500
+
 def read_user_data():
 	single=genfromtxt(fname,delimiter=' ', dtype=int)
 	return single
@@ -53,6 +57,24 @@ def read_and_create_user_Matrix():
 	 	user_id += 1
 	 return user_matrix
 
+#should return <class 'numpy.ndarray'> representation of the user matrix
+def read_and_create_trimmed_user_Matrix():
+	 # user_matrix = np.zeros(shape=(5552,16981)) # both have +1 dimension
+	 fname = "Data/trimmed_users.dat"
+	 user_matrix = np.zeros((trimmed_users_count, trimmed_papers_count), dtype=np.int32)
+
+	 user_id = 0
+	 for line in open(fname):
+	 	docs = line.split()
+	 	docs.pop(0) # removing the paper count
+	 	if(len(docs) > 0):
+		 	user_papers = map(int, docs)
+		 	for d in user_papers:
+		 		user_matrix[user_id][d] = 1
+		 	user_id += 1
+	 return user_matrix
+
+
 #should return <class 'numpy.ndarray'> representation of the user library count
 def read_and_create_user_LibCount():
 	 fname = "Data/users.dat"
@@ -93,6 +115,31 @@ def read_and_create_paper_UserLibFreqCount():
 	 paper_lib = np.delete(paper_lib, 0)
 	 return paper_lib
 
+def create_trimmed_users_data():
+	 fname = "Data/users.dat"
+	 user_id = 1
+	 trimmed_file = open("Data/trimmed_users.dat","w")
+	 
+	 for line in open(fname):
+	 	docs = line.split()
+	 	orig_count = docs.pop(0)	# removing original count
+	 	trimmed_docs = []
+	 	user_trimmed_docs_count = 0
+
+	 	for d in docs:
+	 		if(int(d) < trimmed_papers_count):
+	 			trimmed_docs.append(d)
+	 			user_trimmed_docs_count += 1
+	 	
+	 	trimmed_docs.insert(0, user_trimmed_docs_count)	# adding new count
+	 	trimmed_line = ' '.join(str(td) for td in trimmed_docs)
+	 	trimmed_file.write(trimmed_line+"\n")
+	 	
+	 	user_id += 1
+	 	if(user_id > trimmed_users_count):
+	 		break
+
+	 trimmed_file.close()
 
 # X = read_user_data()
 # X = read_user_data_ol()
@@ -108,3 +155,6 @@ def read_and_create_paper_UserLibFreqCount():
 # # print(type(X[0]))
 # # print(np.array_str(X[0]))
 # print(["%d" % x for x in X[2]])
+
+# create_trimmed_users_data()
+# print(read_and_create_trimmed_user_Matrix().shape)

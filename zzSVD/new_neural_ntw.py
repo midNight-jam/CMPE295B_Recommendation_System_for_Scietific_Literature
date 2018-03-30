@@ -3,14 +3,16 @@ import tensorflow as tf
 import pandas as pd
 import numpy as np
 
-matrix = data.read_and_create_user_Matrix()
+# matrix = data.read_and_create_user_Matrix()
+matrix = data.read_and_create_trimmed_user_Matrix()
 print(matrix.shape)
 print('*' * 9)
 print(["%d" % x for x in matrix[0]])
 print('*' * 29)
 
 
-num_input = 16980
+# num_input = 16980
+num_input = 2500
 num_hidden_1=2048
 num_hidden_2=1024
 num_hidden_3=512
@@ -102,7 +104,7 @@ local_init = tf.local_variables_initializer()
 
 with tf.Session() as session:
     epochs = 10
-    batch_size = 55
+    batch_size = 10
 
     session.run(init)
     session.run(local_init)
@@ -129,6 +131,7 @@ with tf.Session() as session:
 
     preds = session.run(decoder_op, feed_dict={X: matrix})
     
+    preds[preds<=0.1]=0.0
     # preds = preds.astype('<H')
     
     predictions = predictions.append(pd.DataFrame(preds))
