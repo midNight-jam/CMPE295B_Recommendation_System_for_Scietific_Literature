@@ -7,8 +7,8 @@ from numpy import genfromtxt
 fname = "Data/cf-train-1-users.dat"
 # fname = "Data/fraction.dat"
 
-trimmed_users_count = 500
-trimmed_papers_count = 2500
+trimmed_users_count = 1500
+trimmed_papers_count = 4500
 
 def read_user_data():
 	single=genfromtxt(fname,delimiter=' ', dtype=int)
@@ -47,12 +47,7 @@ def read_and_create_user_Matrix():
 	 	docs = line.split()
 	 	docs.pop(0)
 	 	user_papers = map(int, docs)
-	 	# # hv to find a better way to do this in python
-	 	# skipMe = 0;
 	 	for d in user_papers:
-	 		# if skipMe == 0:
-	 			# skipMe = 1
-	 			# continue
 	 		user_matrix[user_id][d] = 1
 	 	user_id += 1
 	 return user_matrix
@@ -75,11 +70,34 @@ def read_and_create_trimmed_user_Matrix():
 	 return user_matrix
 
 
+#should return <class 'numpy.ndarray'> representation of the user matrix
+def read_and_create_paper_word_freq_Matrix():
+	 no_papers = 16980
+	 no_words = 8000
+	 fname = "Data/mult.dat"
+	 paper_vocab_matrix = np.zeros((no_papers, no_words), dtype=np.int32)
+	 paper_id = 0
+	 max_word_id = 0
+	 for line in open(fname):
+	 	docs = line.split()
+	 	docs.pop(0)
+	 	for d in docs:
+	 		wf = d.split(':')
+	 		if(len(wf)==2):
+		 		word_id = int(wf[0])
+		 		word_freq = int(wf[1]) 
+		 		paper_vocab_matrix[paper_id][word_id] = word_freq
+		 		if(word_id > max_word_id):
+		 			max_word_id = word_id
+	 	paper_id += 1
+	 print('MAX Word ID : ' + str(max_word_id))
+	 return paper_vocab_matrix
+
+
 #should return <class 'numpy.ndarray'> representation of the user library count
 def read_and_create_user_LibCount():
 	 fname = "Data/users.dat"
 	 user_lib = np.zeros(shape=(5552), dtype=np.int32) # both have +1 dimension
-
 	 user_id = 1
 	 for line in open(fname):
 	 	docs = line.split()
@@ -127,7 +145,7 @@ def create_trimmed_users_data():
 	 	user_trimmed_docs_count = 0
 
 	 	for d in docs:
-	 		if(int(d) < trimmed_papers_count):
+	 		if(int(d) <= trimmed_papers_count):
 	 			trimmed_docs.append(d)
 	 			user_trimmed_docs_count += 1
 	 	
@@ -142,7 +160,7 @@ def create_trimmed_users_data():
 	 trimmed_file.close()
 
 def read_generated_csv():
-	 fname = "out_mar_30_trim.csv"
+	 fname = "out_mar_30_1500u_4500p.csv"
 	 rec_data = genfromtxt(fname, delimiter=',')
 	 # user_id = 1
 	 # low = 0.3
@@ -150,7 +168,7 @@ def read_generated_csv():
 	 # non_zero_rec = np.ma.masked_outside(rec_data,low,high)
 	 # non_zero_rec = np.asarray(non_zero_rec)
 	 threshold = 0.98
-	 rec_file = open("non_zero_rec_gen.dat","w")
+	 rec_file = open("non_zero_rec_gen_mar_30_1500u_4500p.dat","w")
 	 for r in rec_data:
 	 	doc_id = 1
 	 	rec_docs = []
@@ -181,4 +199,6 @@ def read_generated_csv():
 # create_trimmed_users_data()
 # print(read_and_create_trimmed_user_Matrix().shape)
 
-read_generated_csv()
+# read_generated_csv()
+
+print(read_and_create_paper_word_freq_Matrix())

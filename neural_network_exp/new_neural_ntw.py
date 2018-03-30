@@ -12,7 +12,7 @@ print('*' * 29)
 
 
 # num_input = 16980
-num_input = 2500
+num_input = 4500
 num_hidden_1=2048
 num_hidden_2=1024
 num_hidden_3=512
@@ -104,7 +104,7 @@ local_init = tf.local_variables_initializer()
 
 with tf.Session() as session:
     epochs = 10
-    batch_size = 10
+    batch_size = 15
 
     session.run(init)
     session.run(local_init)
