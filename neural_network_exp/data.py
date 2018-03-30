@@ -141,6 +141,28 @@ def create_trimmed_users_data():
 
 	 trimmed_file.close()
 
+def read_generated_csv():
+	 fname = "out_mar_30_trim.csv"
+	 rec_data = genfromtxt(fname, delimiter=',')
+	 # user_id = 1
+	 # low = 0.3
+	 # high = 1.1
+	 # non_zero_rec = np.ma.masked_outside(rec_data,low,high)
+	 # non_zero_rec = np.asarray(non_zero_rec)
+	 threshold = 0.98
+	 rec_file = open("non_zero_rec_gen.dat","w")
+	 for r in rec_data:
+	 	doc_id = 1
+	 	rec_docs = []
+	 	for p in r:
+	 		if(p > threshold):
+	 			rec_docs.append(doc_id)
+	 		doc_id += 1
+	 	rec_docs.insert(0, len(rec_docs))	# adding new count
+	 	line_str = ' '.join(str(d) for d in rec_docs)
+	 	rec_file.write(line_str+"\n")
+	 rec_file.close()
+
 # X = read_user_data()
 # X = read_user_data_ol()
 # X = read_user_df()
@@ -158,3 +180,5 @@ def create_trimmed_users_data():
 
 # create_trimmed_users_data()
 # print(read_and_create_trimmed_user_Matrix().shape)
+
+read_generated_csv()
