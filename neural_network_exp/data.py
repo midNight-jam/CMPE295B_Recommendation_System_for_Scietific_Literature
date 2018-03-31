@@ -3,8 +3,8 @@ import pandas as pd
 from numpy import genfromtxt
 
 # fname = "Data/small_users.dat"
-# fname = "Data/users.dat"
-fname = "Data/cf-train-1-users.dat"
+fname = "Data/users.dat"
+# fname = "Data/cf-train-1-users.dat"
 # fname = "Data/fraction.dat"
 
 trimmed_users_count = 1500
@@ -121,17 +121,42 @@ def read_and_create_paper_UserLibFreqCount():
 	 return paper_lib
 
 #should return <class 'numpy.ndarray'> representation of the user library count
-def read_and_create_paper_UserLibFreqCount():
-	 fname = "Data/items.dat"
-	 paper_lib = np.zeros(shape=(16981), dtype=np.int32) # both have +1 dimension
+def read_and_create_paper_wordFreqCount():
+	 no_papers = 16980
+	 no_words = 8000
+	 fname = "Data/mult.dat"
+	 paper_lib = np.zeros(shape=(no_papers + 1), dtype=np.int32)
 	 paper_id = 1
 	 for line in open(fname):
 	 	users = line.split()
 	 	count = users.pop(0)
-	 	paper_lib[paper_id] = count
+	 	paper_lib[paper_id] = int(count)
 	 	paper_id += 1
 	 paper_lib = np.delete(paper_lib, 0)
+	 print('SHAPE ::::: ', paper_lib.shape)
 	 return paper_lib
+
+#should return <class 'numpy.ndarray'> representation of the user library count
+def read_and_create_word_paper_FreqCount():
+	 fname = "Data/mult.dat"
+	 max_word_freq = 0
+	 words_dict = {}
+	 for line in open(fname):
+	 	docs = line.split()
+	 	docs.pop(0)
+	 	for d in docs:
+	 		wf = d.split(':')
+	 		if(len(wf)==2):
+	 			word_id = int(wf[0])
+		 		if(word_id in words_dict):
+		 			words_dict[word_id] += 1
+		 		else:
+		 			words_dict[word_id] = 1
+		 		if(words_dict[word_id] > max_word_freq):
+		 			max_word_freq = words_dict[word_id]
+	 print('MAX Word ID : ' + str(max_word_freq))
+	 return words_dict
+
 
 def create_trimmed_users_data():
 	 fname = "Data/users.dat"
@@ -201,4 +226,4 @@ def read_generated_csv():
 
 # read_generated_csv()
 
-print(read_and_create_paper_word_freq_Matrix())
+print(read_and_create_paper_wordFreqCount()[0])
