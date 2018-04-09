@@ -2,9 +2,12 @@ import data
 import tensorflow as tf
 import pandas as pd
 import numpy as np
+import datetime
 
 # matrix = data.read_and_create_user_Matrix()
 matrix = data.read_and_create_trimmed_user_Matrix()
+print('*' * 9)
+print('SHape of matrix from data.py')
 print(matrix.shape)
 print('*' * 9)
 print(["%d" % x for x in matrix[0]])
@@ -83,7 +86,7 @@ loss = tf.losses.sigmoid_cross_entropy(y_true, y_pred)
 
 
 # optimizer = tf.train.RMSPropOptimizer(0.003).minimize(loss)
-optimizer = tf.train.AdamOptimizer(learning_rate=0.001, beta1=0.9, beta2=0.1).minimize(loss)
+optimizer = tf.train.AdamOptimizer(learning_rate=0.001, beta1=0.9, beta2=0.999).minimize(loss)
 # optimizer = tf.train.AdagradOptimizer(1e-4).minimize(loss)
 
 
@@ -103,8 +106,8 @@ local_init = tf.local_variables_initializer()
 
 
 with tf.Session() as session:
-    epochs = 10
-    batch_size = 15
+    epochs = 60
+    batch_size = 100
 
     session.run(init)
     session.run(local_init)
@@ -131,10 +134,11 @@ with tf.Session() as session:
 
     preds = session.run(decoder_op, feed_dict={X: matrix})
     
-    preds[preds<=0.1]=0.0
+    preds[preds<=0.02]=0.0
     # preds = preds.astype('<H')
     
     predictions = predictions.append(pd.DataFrame(preds))
 
     print(predictions)
-    predictions.to_csv('out.csv')
+    right_now = str(datetime.datetime.now().time())
+    predictions.to_csv('Data/out'+right_now+'.csv', header=False, index=False)

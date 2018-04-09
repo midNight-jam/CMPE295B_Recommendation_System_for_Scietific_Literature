@@ -1,14 +1,16 @@
 import numpy as np
 import pandas as pd
 from numpy import genfromtxt
+import datetime
 
 # fname = "Data/small_users.dat"
 fname = "Data/users.dat"
 # fname = "Data/cf-train-1-users.dat"
 # fname = "Data/fraction.dat"
-
+output_dir = "zzOutput/"
 trimmed_users_count = 1500
 trimmed_papers_count = 4500
+threshold = 0.02
 
 def read_user_data():
 	single=genfromtxt(fname,delimiter=' ', dtype=int)
@@ -161,7 +163,7 @@ def read_and_create_word_paper_FreqCount():
 def create_trimmed_users_data():
 	 fname = "Data/users.dat"
 	 user_id = 1
-	 trimmed_file = open("Data/trimmed_users.dat","w")
+	 trimmed_file = open("Data/trimmed/trimmed_users.dat","w")
 	 
 	 for line in open(fname):
 	 	docs = line.split()
@@ -184,18 +186,13 @@ def create_trimmed_users_data():
 
 	 trimmed_file.close()
 
+
 def read_generated_csv():
-	 fname = "out_mar_30_1500u_4500p.csv"
+	 fname = "out.csv"
 	 rec_data = genfromtxt(fname, delimiter=',')
-	 # user_id = 1
-	 # low = 0.3
-	 # high = 1.1
-	 # non_zero_rec = np.ma.masked_outside(rec_data,low,high)
-	 # non_zero_rec = np.asarray(non_zero_rec)
-	 threshold = 0.98
-	 rec_file = open("non_zero_rec_gen_mar_30_1500u_4500p.dat","w")
+	 rec_file = open("non_zero_rec_gen.dat","w")
 	 for r in rec_data:
-	 	doc_id = 1
+	 	doc_id = 0
 	 	rec_docs = []
 	 	for p in r:
 	 		if(p > threshold):
@@ -205,6 +202,258 @@ def read_generated_csv():
 	 	line_str = ' '.join(str(d) for d in rec_docs)
 	 	rec_file.write(line_str+"\n")
 	 rec_file.close()
+
+def read_generated_csv_dictionary():
+	 fname = "out.csv"
+	 rec_data = genfromtxt(fname, delimiter=',')
+	 rec_file = open("non_zero_rec_gen_out_apr_08_1500u_4500p.dat","w")
+
+	 for r in rec_data:
+	 	pred = {}
+	 	doc_id = 0
+	 	for p in r:
+	 		if(p >= threshold):
+	 			pred[doc_id] = p
+	 		doc_id += 1
+
+	 	keys_sorted_by_value_pred = sorted(pred, key=pred.get, reverse=True)
+	 	line_str = str(len(pred))	# adding new count
+
+	 	for k in keys_sorted_by_value_pred:
+	 		line_str+= ' '+ str(k) + ':' + str(pred[k])
+
+	 	rec_file.write(line_str+"\n")
+
+	 rec_file.close()
+
+
+
+def read_generated_user_test_pred_dictionary():
+	 pred_file = "out.csv"
+	 pred_data = genfromtxt(pred_file, delimiter=',')
+	 pred_user_dict = {}
+	 pred_user_dict_paper_info = {}
+	 user_id = 1;
+
+	 for pred in pred_data:
+	 	pred_user_dict[user_id] = []
+	 	pred_user_dict_paper_info[user_id] = {}
+	 	doc_id = 0
+	 	for p in pred:
+	 		if(p >= threshold):
+	 			pred_user_dict[user_id].append( doc_id)
+	 			pred_user_dict_paper_info[user_id][doc_id]= p
+	 		doc_id += 1
+	 	user_id += 1
+
+	 user_id = 1;
+	 test_file = "Data/trimmed_users.dat"
+	 test_user_dict = {}
+
+	 for line in open(test_file):
+	 	docs = line.split()
+	 	docs.pop(0)
+	 	user_papers = map(int, docs)
+	 	test_user_dict[user_id] = []
+	 	
+	 	for d in user_papers:
+	 		test_user_dict[user_id].append(d)
+	 	user_id += 1
+
+	 return pred_user_dict, test_user_dict, pred_user_dict_paper_info
+
+
+def preicsion():
+	 pred, test, pred_tuples = read_generated_user_test_pred_dictionary()
+	 if(len(pred) != len(test) or len(pred) != len(pred_tuples)):
+	 	print("Lengths of predicted & test users dictionary doesnt match by row Count")
+	 	return
+	 
+	 user_count = len(pred)
+	 final_precision = 0.0
+	 max_precision = 0.0
+	 included_users = 0
+
+	 for i  in range(user_count):
+	 	i += 1
+	 	users_likes_count = len(pred[i])
+	 	
+	 	if(users_likes_count < 1):
+	 		# print("Skipping for user {} as no predictions found".format(i))
+	 		continue
+
+	 	included_users+=1
+	 	pred_matches_count = 0
+	 	test_users_doc = test[i]
+	 	test_users_set = set(test_users_doc)
+	 	pred_users_doc = pred[i]
+	 	
+	 	for pd in pred_users_doc:
+	 		if( pd in test_users_set):
+	 			pred_matches_count += 1
+
+	 	user_precision = pred_matches_count / users_likes_count
+	 	if(user_precision > max_precision):
+	 		max_precision = user_precision
+
+	 	print(' u '+ str(i)+'- p '+str(user_precision))
+
+	 	final_precision += user_precision
+
+	 print('-'*50)
+	 print('final Precision / included users')
+	 print('{0} / {1}'.format(final_precision, included_users))
+	 final_precision = final_precision / included_users
+
+	 print('Total users - {0}'.format(user_count))
+	 print('Users included - {0}'.format(included_users))
+	 print('Max Precision : ' + str(max_precision))
+	 print('Final Precision : ' + str(final_precision))
+
+	 right_now = str(datetime.datetime.now().isoformat())
+	 precision_output_name = output_dir+'precision__'+right_now+'.dat'
+	 precision_file = open(precision_output_name,"w")
+	 precision_file.write('final Precision / included users\n')
+	 precision_file.write('{0} / {1}\n'.format(final_precision, included_users))
+	 precision_file.write('Total users - {0}\n'.format(user_count))
+	 precision_file.write('Users included - {0}\n'.format(included_users))
+	 precision_file.write('Max Precision : {0}\n'.format(max_precision))
+	 precision_file.write('Final Precision : {0}\n'.format(final_precision))
+	 precision_file.close()
+
+def preicsion_M():
+	 #Precision@M = # items the user likes in the list / M
+	 pred, test, pred_info = read_generated_user_test_pred_dictionary()
+	 if(len(pred) != len(test) or len(pred) != len(pred_info)):
+	 	print("Lengths of predicted & test users dictionary doesnt match by row Count")
+	 	return
+	 
+	 user_count = len(pred)
+	 final_precision_M = 0.0
+	 max_precision_M = 0.0
+	 included_users = 0
+	 M = 3
+
+	 for i  in range(user_count):
+	 	i += 1 # as user ids begin @ 1
+	 	users_likes_count = len(pred[i])
+	 	
+	 	if(users_likes_count < M):
+	 		# print("Skipping for user {} as no predictions found".format(i))
+	 		continue
+
+	 	included_users+=1
+	 	pred_matches_count = 0
+	 	test_users_doc = test[i]
+	 	test_users_set = set(test_users_doc)
+	 	pred_users_doc = pred[i]
+	 	count = 0
+	 	keys_sorted_by_value_pred = sorted(pred, key=pred.get, reverse=True)
+
+	 	for pd in keys_sorted_by_value_pred:
+	 		
+	 		if( pd in test_users_set):
+	 			pred_matches_count += 1
+	 		count+=1
+	 		if(count >= M):
+	 			break
+
+	 	user_precision_M = pred_matches_count / M
+	 	if(user_precision_M > max_precision_M):
+	 		max_precision_M = user_precision_M
+
+	 	print(' u {0} - p {1}'.format(i, user_precision_M))
+
+	 	final_precision_M += user_precision_M
+
+	 print('-'*50)
+	 print('Preicision @ M - {}'.format(M))
+	 print('-'*50)
+	 print('final Precision / included users')
+	 print('{0} / {1}'.format(final_precision_M, included_users))
+	 final_precision_M = final_precision_M / included_users
+
+	 print('Total users - {0}'.format(user_count))
+	 print('Users included - {0}'.format(included_users))
+	 print('Max Precision @ {0}- : {1}'.format(M, max_precision_M))
+	 print('Final Precision @ {0} : {1}'.format(M,final_precision_M))
+
+	 right_now = str(datetime.datetime.now().isoformat())
+	 precision_M_output_name = output_dir+'precision__@_M_'+right_now+'.dat'
+	 precision_M_file = open(precision_M_output_name,"w")
+	 precision_M_file.write('Precision @ M\n M = {0}\n'.format(M))
+	 precision_M_file.write('final Precision / included users\n')
+	 precision_M_file.write('{0} / {1}\n'.format(final_precision_M, included_users))
+	 precision_M_file.write('Total users - {0}\n'.format(user_count))
+	 precision_M_file.write('Users included - {0}\n'.format(included_users))
+	 precision_M_file.write('Max Precision @ {0} : {1}\n'.format(M, max_precision_M))
+	 precision_M_file.write('Final Precision @ {0} : {1}\n'.format(M,final_precision_M))
+	 precision_M_file.close()
+
+
+def recall():
+	 pred, test, pred_info = read_generated_user_test_pred_dictionary()
+	 if(len(pred) != len(test) or len(pred) != len(pred_info)):
+	 	print("Lengths of predicted & test users dictionary doesnt match by row Count")
+	 	return
+	 
+	 user_count = len(pred)
+	 final_recall = 0.0
+	 max_recall = 0.0
+	 included_users = 0
+
+	 for i  in range(user_count):
+	 	i += 1
+	 	users_relevant_docs_count = len(test[i])
+	 	
+	 	# if there are no predictions or no relevant docs in test(divide by 0 else)
+	 	if(len(pred[i]) < 1 or users_relevant_docs_count < 1):
+	 		# print("Skipping for user {} as no predictions found".format(i))
+	 		continue
+
+	 	included_users+=1
+	 	pred_matches_count = 0
+	 	test_users_doc = test[i]
+	 	test_users_set = set(test_users_doc)
+	 	pred_users_doc = pred[i]
+	 	
+	 	for pd in pred_users_doc:
+	 		if( pd in test_users_set):
+	 			pred_matches_count += 1
+
+	 	user_recall = pred_matches_count / users_relevant_docs_count
+	 	if(user_recall > max_recall):
+	 		max_recall = user_recall
+
+	 	print(' u {0} - p {1}'.format(i, user_recall))
+
+	 	final_recall += user_recall
+
+	 print('-'*50)
+	 print('final Precision / included users')
+	 print('{0} / {1}'.format(final_recall, included_users))
+	 final_recall = final_recall / included_users
+
+	 print('Total users - {0}'.format(user_count))
+	 print('Users included - {0}'.format(included_users))
+	 print('Max Recall : ' + str(max_recall))
+	 print('Final Recall : ' + str(final_recall))
+	 
+	 right_now = str(datetime.datetime.now().isoformat())
+	 recall_output_name = output_dir+'recall__'+right_now+'.dat'
+	 recall_file = open(recall_output_name,"w")
+	 recall_file.write('final Recall / included users\n')
+	 recall_file.write('{0} / {1}\n'.format(final_recall, included_users))
+	 recall_file.write('Total users - {0}\n'.format(user_count))
+	 recall_file.write('Users included - {0}\n'.format(included_users))
+	 recall_file.write('Max Recall : {0}\n'.format(max_recall))
+	 recall_file.write('Final Recall :{0}\n'.format(final_recall))
+	 recall_file.close()
+
+
+########################################################################
+# All below must be commented, debug only
+########################################################################
 
 # X = read_user_data()
 # X = read_user_data_ol()
@@ -225,5 +474,19 @@ def read_generated_csv():
 # print(read_and_create_trimmed_user_Matrix().shape)
 
 # read_generated_csv()
+# # 
+# print(read_generated_csv())
+# print(read_generated_csv_dictionary())
 
-print(read_and_create_paper_wordFreqCount()[0])
+
+# p, t, pin = read_generated_user_test_pred_dictionary()
+# print('pred len '+str(len(p)))
+# print('test len '+str(len(t)))
+# print(p[21])
+# print(t[21])
+# print(pin[21])
+
+# preicsion()
+# preicsion_M()
+recall()
+########################################################################
