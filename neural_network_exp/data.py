@@ -190,7 +190,9 @@ def create_trimmed_users_data():
 def read_generated_csv():
 	 fname = "out.csv"
 	 rec_data = genfromtxt(fname, delimiter=',')
-	 rec_file = open("non_zero_rec_gen.dat","w")
+	 right_now = str(datetime.datetime.now().isoformat())
+	 gen_pred_file = output_dir+'gen__pred__docs'+right_now+'.dat'
+	 rec_file = open(gen_pred_file,"w")
 	 for r in rec_data:
 	 	doc_id = 0
 	 	rec_docs = []
@@ -204,9 +206,10 @@ def read_generated_csv():
 	 rec_file.close()
 
 def read_generated_csv_dictionary():
-	 fname = "out.csv"
-	 rec_data = genfromtxt(fname, delimiter=',')
-	 rec_file = open("non_zero_rec_gen_out_apr_08_1500u_4500p.dat","w")
+	 rec_data = genfromtxt('out.csv', delimiter=',')
+	 right_now = str(datetime.datetime.now().isoformat())
+	 gen_pred_file = output_dir+'gen__pred__sorted__'+right_now+'.dat'
+	 rec_file = open(gen_pred_file,"w")
 
 	 for r in rec_data:
 	 	pred = {}
@@ -486,7 +489,9 @@ def recall():
 # print(t[21])
 # print(pin[21])
 
-# preicsion()
-# preicsion_M()
+preicsion()
+preicsion_M()
 recall()
+# read_generated_csv_dictionary()
+# read_generated_csv()
 ########################################################################
