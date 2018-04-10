@@ -10,9 +10,9 @@ print('*' * 9)
 print('SHape of matrix from data.py')
 print(matrix.shape)
 print('*' * 9)
-print(["%d" % x for x in matrix[0]])
+# print(["%d" % x for x in matrix[0]])
 print('*' * 29)
-
+right_now = str(datetime.datetime.now().isoformat())
 
 # num_input = 16980
 num_input = 4500
@@ -116,8 +116,8 @@ local_init = tf.local_variables_initializer()
 losses_plot = []
 
 with tf.Session() as session:
-    epochs = 10
-    batch_size = 100
+    epochs = 50
+    batch_size = 60
 
     session.run(init)
     session.run(local_init)
@@ -137,7 +137,7 @@ with tf.Session() as session:
         avg_cost /= num_batches
 
         print("Epoch: {} Loss: {}".format(i + 1, avg_cost))
-        losses_plot.append(avg_cost);
+        losses_plot.append(avg_cost)
 
     print("Predictions...")
 
@@ -145,19 +145,26 @@ with tf.Session() as session:
 
     preds = session.run(decoder_op, feed_dict={X: matrix})
     
-    preds[preds<=0.02]=0.0
+    preds[preds<=0.01]=0.0
     # preds = preds.astype('<H')
     
     predictions = predictions.append(pd.DataFrame(preds))
 
     print(predictions)
-    right_now = str(datetime.datetime.now().time())
-    predictions.to_csv('Data/out'+right_now+'.csv', header=False, index=False)
+    
+    predictions.to_csv('out__'+right_now+'.csv', header=False, index=False)
+    
+    loss_name = 'loss_plot__'+right_now+'.dat'
+    loss_file = open(loss_name,"w")
+    for lp in losses_plot:
+        loss_file.write('{0}\n'.format((lp)))
+    loss_file.close()
 
-
-     right_now = str(datetime.datetime.now().isoformat())
-     loss_name = 'loss_plot__'+right_now+'.dat'
-     loss_file = open(loss_name,"w")
-     for lp in losses_plot:
-        loss_file.write('{0}\n'.format((lp))
-     loss_file.close()
+################################################
+## Persist the results
+################################################
+    data.read_generated_csv_dictionary(right_now)
+    data.read_generated_csv(right_now)
+    data.preicsion(right_now)
+    data.preicsion_M(right_now)
+    data.recall(right_now)

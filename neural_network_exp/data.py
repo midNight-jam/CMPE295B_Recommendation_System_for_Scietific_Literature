@@ -16,25 +16,6 @@ def read_user_data():
 	single=genfromtxt(fname,delimiter=' ', dtype=int)
 	return single
 
-def read_user_data_ol():
-	result_array = np.empty([5551, 16980])
-	arrays = [np.array(map(int, line.split())) for line in open(fname)]
-	maxLen = 0
-	tlen = 0
-	for line in open(fname):
-		tlen = len(line.split())
-		if(tlen > maxLen):
-			maxLen = tlen
-		temp_arr = np.array(map(int, line.split()))
-		result_array = np.append(result_array, [temp_arr], axis=0)
-
-	print(maxLen)
-	print('#'*10)
-	return result_array
-	# return np.vstack( arrays )
-	# return np.concatenate( arrays, axis=0 )
-
-
 def read_user_df():
 	df = pd.read_csv(fname, sep="|")
 	print (df)
@@ -57,7 +38,7 @@ def read_and_create_user_Matrix():
 #should return <class 'numpy.ndarray'> representation of the user matrix
 def read_and_create_trimmed_user_Matrix():
 	 # user_matrix = np.zeros(shape=(5552,16981)) # both have +1 dimension
-	 fname = "Data/trimmed_users.dat"
+	 fname = "Data/trimmed-cf-train-1-users.dat"
 	 user_matrix = np.zeros((trimmed_users_count, trimmed_papers_count), dtype=np.int32)
 
 	 user_id = 0
@@ -161,9 +142,9 @@ def read_and_create_word_paper_FreqCount():
 
 
 def create_trimmed_users_data():
-	 fname = "Data/users.dat"
+	 fname = "Data/cf-test-1-users.dat"
 	 user_id = 1
-	 trimmed_file = open("Data/trimmed/trimmed_users.dat","w")
+	 trimmed_file = open("Data/trimmed-cf-test-1-users.dat","w")
 	 
 	 for line in open(fname):
 	 	docs = line.split()
@@ -187,10 +168,9 @@ def create_trimmed_users_data():
 	 trimmed_file.close()
 
 
-def read_generated_csv():
-	 fname = "out.csv"
+def read_generated_csv(right_now):
+	 fname = "out__"+right_now+".csv"
 	 rec_data = genfromtxt(fname, delimiter=',')
-	 right_now = str(datetime.datetime.now().isoformat())
 	 gen_pred_file = output_dir+'gen__pred__docs'+right_now+'.dat'
 	 rec_file = open(gen_pred_file,"w")
 	 for r in rec_data:
@@ -205,9 +185,9 @@ def read_generated_csv():
 	 	rec_file.write(line_str+"\n")
 	 rec_file.close()
 
-def read_generated_csv_dictionary():
-	 rec_data = genfromtxt('out.csv', delimiter=',')
-	 right_now = str(datetime.datetime.now().isoformat())
+def read_generated_csv_dictionary(right_now):
+	 rec_data = genfromtxt('out__'+right_now+'.csv', delimiter=',')
+	 # right_now = str(datetime.datetime.now().isoformat())
 	 gen_pred_file = output_dir+'gen__pred__sorted__'+right_now+'.dat'
 	 rec_file = open(gen_pred_file,"w")
 
@@ -231,8 +211,9 @@ def read_generated_csv_dictionary():
 
 
 
-def read_generated_user_test_pred_dictionary():
-	 pred_file = "out.csv"
+def read_generated_user_test_pred_dictionary(right_now):
+	 pred_file = "out__"+right_now+".csv"
+	 # pred_file = "out__2018-04-09T02:48:29.095769.csv"
 	 pred_data = genfromtxt(pred_file, delimiter=',')
 	 pred_user_dict = {}
 	 pred_user_dict_paper_info = {}
@@ -250,7 +231,7 @@ def read_generated_user_test_pred_dictionary():
 	 	user_id += 1
 
 	 user_id = 1;
-	 test_file = "Data/trimmed_users.dat"
+	 test_file = "Data/trimmed-cf-test-1-users.dat"
 	 test_user_dict = {}
 
 	 for line in open(test_file):
@@ -266,8 +247,8 @@ def read_generated_user_test_pred_dictionary():
 	 return pred_user_dict, test_user_dict, pred_user_dict_paper_info
 
 
-def preicsion():
-	 pred, test, pred_tuples = read_generated_user_test_pred_dictionary()
+def preicsion(right_now):
+	 pred, test, pred_tuples = read_generated_user_test_pred_dictionary(right_now)
 	 if(len(pred) != len(test) or len(pred) != len(pred_tuples)):
 	 	print("Lengths of predicted & test users dictionary doesnt match by row Count")
 	 	return
@@ -313,7 +294,6 @@ def preicsion():
 	 print('Max Precision : ' + str(max_precision))
 	 print('Final Precision : ' + str(final_precision))
 
-	 right_now = str(datetime.datetime.now().isoformat())
 	 precision_output_name = output_dir+'precision__'+right_now+'.dat'
 	 precision_file = open(precision_output_name,"w")
 	 precision_file.write('final Precision / included users\n')
@@ -324,9 +304,9 @@ def preicsion():
 	 precision_file.write('Final Precision : {0}\n'.format(final_precision))
 	 precision_file.close()
 
-def preicsion_M():
+def preicsion_M(right_now):
 	 #Precision@M = # items the user likes in the list / M
-	 pred, test, pred_info = read_generated_user_test_pred_dictionary()
+	 pred, test, pred_info = read_generated_user_test_pred_dictionary(right_now)
 	 if(len(pred) != len(test) or len(pred) != len(pred_info)):
 	 	print("Lengths of predicted & test users dictionary doesnt match by row Count")
 	 	return
@@ -335,7 +315,7 @@ def preicsion_M():
 	 final_precision_M = 0.0
 	 max_precision_M = 0.0
 	 included_users = 0
-	 M = 3
+	 M = 10
 
 	 for i  in range(user_count):
 	 	i += 1 # as user ids begin @ 1
@@ -381,7 +361,6 @@ def preicsion_M():
 	 print('Max Precision @ {0}- : {1}'.format(M, max_precision_M))
 	 print('Final Precision @ {0} : {1}'.format(M,final_precision_M))
 
-	 right_now = str(datetime.datetime.now().isoformat())
 	 precision_M_output_name = output_dir+'precision__@_M_'+right_now+'.dat'
 	 precision_M_file = open(precision_M_output_name,"w")
 	 precision_M_file.write('Precision @ M\n M = {0}\n'.format(M))
@@ -394,8 +373,8 @@ def preicsion_M():
 	 precision_M_file.close()
 
 
-def recall():
-	 pred, test, pred_info = read_generated_user_test_pred_dictionary()
+def recall(right_now):
+	 pred, test, pred_info = read_generated_user_test_pred_dictionary(right_now)
 	 if(len(pred) != len(test) or len(pred) != len(pred_info)):
 	 	print("Lengths of predicted & test users dictionary doesnt match by row Count")
 	 	return
@@ -442,7 +421,6 @@ def recall():
 	 print('Max Recall : ' + str(max_recall))
 	 print('Final Recall : ' + str(final_recall))
 	 
-	 right_now = str(datetime.datetime.now().isoformat())
 	 recall_output_name = output_dir+'recall__'+right_now+'.dat'
 	 recall_file = open(recall_output_name,"w")
 	 recall_file.write('final Recall / included users\n')
@@ -454,6 +432,13 @@ def recall():
 	 recall_file.close()
 
 
+def get_cruve_readings(readings_file):
+	 # readings_file = "loss_plot__2018-04-09T02:48:29.095769.dat"
+	 readings = []
+	 for line in open(readings_file):
+	 	readings.append(float(line))
+	 return readings
+
 ########################################################################
 # All below must be commented, debug only
 ########################################################################
@@ -463,21 +448,12 @@ def recall():
 # X = read_user_df()
 # X = read_user_df()
 # X = read_and_create_user_Matrix()
-# print(X)
-# print(X.shape)
-# print(type(X))
-# print(X[0])
-
-# # print(type(X[0][0]))
-# # print(type(X[0]))
-# # print(np.array_str(X[0]))
-# print(["%d" % x for x in X[2]])
 
 # create_trimmed_users_data()
 # print(read_and_create_trimmed_user_Matrix().shape)
 
 # read_generated_csv()
-# # 
+# #
 # print(read_generated_csv())
 # print(read_generated_csv_dictionary())
 
@@ -489,9 +465,15 @@ def recall():
 # print(t[21])
 # print(pin[21])
 
-preicsion()
-preicsion_M()
-recall()
+#============================================
+# run after the out.csv is generated
+#============================================
+# right_now = str(datetime.datetime.now().isoformat())
 # read_generated_csv_dictionary()
-# read_generated_csv()
+# read_generated_csv()#
+# preicsion()
+# preicsion_M(right_now)
+# recall()
+#============================================
+
 ########################################################################
