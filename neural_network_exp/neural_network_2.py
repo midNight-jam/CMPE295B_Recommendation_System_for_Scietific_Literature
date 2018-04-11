@@ -15,7 +15,7 @@ print('*' * 29)
 right_now = str(datetime.datetime.now().isoformat())
 
 # num_input = 16980
-num_input = 4500
+num_input = 6000
 num_hidden_0=4096
 num_hidden_1=2048
 num_hidden_2=1024
@@ -116,8 +116,8 @@ local_init = tf.local_variables_initializer()
 losses_plot = []
 
 with tf.Session() as session:
-    epochs = 50
-    batch_size = 60
+    epochs = 100
+    batch_size = 40
 
     session.run(init)
     session.run(local_init)

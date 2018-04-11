@@ -8,9 +8,10 @@ fname = "Data/users.dat"
 # fname = "Data/cf-train-1-users.dat"
 # fname = "Data/fraction.dat"
 output_dir = "zzOutput/"
-trimmed_users_count = 1500
-trimmed_papers_count = 4500
+trimmed_users_count = 2000
+trimmed_papers_count = 6000
 threshold = 0.02
+test_file = "Data/trimmed-cf-test-1-users_{0}u_{1}p.dat".format(trimmed_users_count, trimmed_papers_count)
 
 def read_user_data():
 	single=genfromtxt(fname,delimiter=' ', dtype=int)
@@ -22,8 +23,7 @@ def read_user_df():
 
 #should return <class 'numpy.ndarray'> representation of the user matrix
 def read_and_create_user_Matrix():
-	 # user_matrix = np.zeros(shape=(5552,16981)) # both have +1 dimension
-	 user_matrix = np.zeros((5551, 16980), dtype=np.float32)
+	 user_matrix = np.zeros((5550, 16980), dtype=np.float32)
 
 	 user_id = 0
 	 for line in open(fname):
@@ -37,12 +37,11 @@ def read_and_create_user_Matrix():
 
 #should return <class 'numpy.ndarray'> representation of the user matrix
 def read_and_create_trimmed_user_Matrix():
-	 # user_matrix = np.zeros(shape=(5552,16981)) # both have +1 dimension
-	 fname = "Data/trimmed-cf-train-1-users.dat"
+	 name = "Data/trimmed-cf-test-1-users_{0}u_{1}p.dat".format(trimmed_users_count, trimmed_papers_count)
 	 user_matrix = np.zeros((trimmed_users_count, trimmed_papers_count), dtype=np.int32)
 
 	 user_id = 0
-	 for line in open(fname):
+	 for line in open(name):
 	 	docs = line.split()
 	 	docs.pop(0) # removing the paper count
 	 	if(len(docs) > 0):
@@ -51,6 +50,40 @@ def read_and_create_trimmed_user_Matrix():
 		 		user_matrix[user_id][d] = 1
 		 	user_id += 1
 	 return user_matrix
+
+
+def create_trimmed_train_users_data():
+	 fname = "Data/cf-train-1-users.dat"
+	 name = "Data/trimmed-cf-train-1-users_{0}u_{1}p.dat".format(trimmed_users_count, trimmed_papers_count)
+	 create_trim_file(fname, name)
+
+def create_trimmed_test_users_data():
+	 fname = "Data/cf-test-1-users.dat"
+	 name = "Data/trimmed-cf-test-1-users_{0}u_{1}p.dat".format(trimmed_users_count, trimmed_papers_count)
+	 create_trim_file(fname, name)
+
+def create_trim_file(fname, name):
+	 user_id = 1
+	 trimmed_file = open(name,"w")
+	 for line in open(fname):
+	 	docs = line.split()
+	 	orig_count = docs.pop(0)	# removing original count
+	 	trimmed_docs = []
+	 	user_trimmed_docs_count = 0
+
+	 	for d in docs:
+	 		if(int(d) <= trimmed_papers_count):
+	 			trimmed_docs.append(d)
+	 			user_trimmed_docs_count += 1
+	 	
+	 	trimmed_docs.insert(0, user_trimmed_docs_count)	# adding new count
+	 	trimmed_line = ' '.join(str(td) for td in trimmed_docs)
+	 	trimmed_file.write(trimmed_line+"\n")
+	 	
+	 	user_id += 1
+	 	if(user_id > trimmed_users_count):
+	 		break
+	 trimmed_file.close()
 
 
 #should return <class 'numpy.ndarray'> representation of the user matrix
@@ -141,33 +174,6 @@ def read_and_create_word_paper_FreqCount():
 	 return words_dict
 
 
-def create_trimmed_users_data():
-	 fname = "Data/cf-test-1-users.dat"
-	 user_id = 1
-	 trimmed_file = open("Data/trimmed-cf-test-1-users.dat","w")
-	 
-	 for line in open(fname):
-	 	docs = line.split()
-	 	orig_count = docs.pop(0)	# removing original count
-	 	trimmed_docs = []
-	 	user_trimmed_docs_count = 0
-
-	 	for d in docs:
-	 		if(int(d) <= trimmed_papers_count):
-	 			trimmed_docs.append(d)
-	 			user_trimmed_docs_count += 1
-	 	
-	 	trimmed_docs.insert(0, user_trimmed_docs_count)	# adding new count
-	 	trimmed_line = ' '.join(str(td) for td in trimmed_docs)
-	 	trimmed_file.write(trimmed_line+"\n")
-	 	
-	 	user_id += 1
-	 	if(user_id > trimmed_users_count):
-	 		break
-
-	 trimmed_file.close()
-
-
 def read_generated_csv(right_now):
 	 fname = "out__"+right_now+".csv"
 	 rec_data = genfromtxt(fname, delimiter=',')
@@ -213,7 +219,6 @@ def read_generated_csv_dictionary(right_now):
 
 def read_generated_user_test_pred_dictionary(right_now):
 	 pred_file = "out__"+right_now+".csv"
-	 # pred_file = "out__2018-04-09T02:48:29.095769.csv"
 	 pred_data = genfromtxt(pred_file, delimiter=',')
 	 pred_user_dict = {}
 	 pred_user_dict_paper_info = {}
@@ -231,7 +236,6 @@ def read_generated_user_test_pred_dictionary(right_now):
 	 	user_id += 1
 
 	 user_id = 1;
-	 test_file = "Data/trimmed-cf-test-1-users.dat"
 	 test_user_dict = {}
 
 	 for line in open(test_file):
@@ -450,7 +454,8 @@ def get_cruve_readings(readings_file):
 # X = read_and_create_user_Matrix()
 
 # create_trimmed_users_data()
-# print(read_and_create_trimmed_user_Matrix().shape)
+# X = read_and_create_trimmed_user_Matrix() 
+# print(X.shape)
 
 # read_generated_csv()
 # #
@@ -465,15 +470,18 @@ def get_cruve_readings(readings_file):
 # print(t[21])
 # print(pin[21])
 
+# create_trimmed_train_users_data()
+# create_trimmed_test_users_data()
+
 #============================================
 # run after the out.csv is generated
 #============================================
-# right_now = str(datetime.datetime.now().isoformat())
-# read_generated_csv_dictionary()
-# read_generated_csv()#
-# preicsion()
+# right_now = "2018-04-09T19:13:04.874678"
+# read_generated_csv_dictionary(right_now)
+# read_generated_csv(right_now)
+# preicsion(right_now)
 # preicsion_M(right_now)
-# recall()
+# recall(right_now)
 #============================================
 
 ########################################################################
