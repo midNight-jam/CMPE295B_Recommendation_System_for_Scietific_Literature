@@ -141,15 +141,17 @@ def read_and_create_paper_wordFreqCount():
 	 no_papers = 16980
 	 no_words = 8000
 	 fname = "Data/mult.dat"
-	 paper_lib = np.zeros(shape=(no_papers + 1), dtype=np.int32)
-	 paper_id = 1
+	 paper_lib = np.zeros(shape=(no_papers), dtype=np.int32)
+	 paper_id = 0
+	 max_count = 0
 	 for line in open(fname):
 	 	users = line.split()
-	 	count = users.pop(0)
-	 	paper_lib[paper_id] = int(count)
+	 	count = int(users.pop(0))
+	 	paper_lib[paper_id] = count
+	 	if(count > max_count):
+	 		max_count = count
 	 	paper_id += 1
-	 paper_lib = np.delete(paper_lib, 0)
-	 print('SHAPE ::::: ', paper_lib.shape)
+	 print('SHAPE ::::: {} \n max count ::: {}'.format(paper_lib.shape, max_count))
 	 return paper_lib
 
 #should return <class 'numpy.ndarray'> representation of the user library count
@@ -170,7 +172,7 @@ def read_and_create_word_paper_FreqCount():
 		 			words_dict[word_id] = 1
 		 		if(words_dict[word_id] > max_word_freq):
 		 			max_word_freq = words_dict[word_id]
-	 print('MAX Word ID : ' + str(max_word_freq))
+	 print('MAX Word Frequency : ' + str(max_word_freq))
 	 return words_dict
 
 
@@ -472,6 +474,8 @@ def get_cruve_readings(readings_file):
 
 # create_trimmed_train_users_data()
 # create_trimmed_test_users_data()
+
+read_and_create_paper_wordFreqCount()
 
 #============================================
 # run after the out.csv is generated
