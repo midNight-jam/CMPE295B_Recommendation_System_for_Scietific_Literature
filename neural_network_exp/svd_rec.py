@@ -1,8 +1,8 @@
 import tensorflow as tf
 import data
 
-nb_users = 5552	# users
-nb_products = 16981	# products
+nb_users = 5551	# users
+nb_products = 16980	# products
 nb_factors = 5000	# no of latent factors
 # max_rating = 1	# max possible rating for a paper
 # nb_rated_products = 5	# avg rated products per user

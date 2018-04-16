@@ -8,9 +8,10 @@ fname = "Data/users.dat"
 # fname = "Data/cf-train-1-users.dat"
 # fname = "Data/fraction.dat"
 output_dir = "zzOutput/"
-trimmed_users_count = 2000
-trimmed_papers_count = 6000
+trimmed_users_count = 1000
+trimmed_papers_count = 16980
 threshold = 0.02
+threshold_lib_size = 5
 test_file = "Data/trimmed-cf-test-1-users_{0}u_{1}p.dat".format(trimmed_users_count, trimmed_papers_count)
 
 def read_user_data():
@@ -23,8 +24,8 @@ def read_user_df():
 
 #should return <class 'numpy.ndarray'> representation of the user matrix
 def read_and_create_user_Matrix():
-	 user_matrix = np.zeros((5550, 16980), dtype=np.float32)
-
+	 user_matrix = np.zeros((5551, 16980), dtype=np.float32)
+	 fname = "Data/users.dat"
 	 user_id = 0
 	 for line in open(fname):
 	 	docs = line.split()
@@ -51,6 +52,21 @@ def read_and_create_trimmed_user_Matrix():
 		 	user_id += 1
 	 return user_matrix
 
+#should return <class 'numpy.ndarray'> representation of the user matrix
+def read_and_create_trimmed_user_Matrix_Threshold():
+	 name = "Data/trimmed-cf-test-1-users_{0}u_{1}p.dat".format(trimmed_users_count, trimmed_papers_count)
+	 user_matrix = np.zeros((trimmed_users_count, trimmed_papers_count), dtype=np.int32)
+
+	 user_id = 0
+	 for line in open(name):
+	 	docs = line.split()
+	 	docs.pop(0) # removing the paper count
+	 	if(len(docs) > threshold_lib_size):
+		 	user_papers = map(int, docs)
+		 	for d in user_papers:
+		 		user_matrix[user_id][d] = 1
+	 	user_id += 1
+	 return user_matrix
 
 def create_trimmed_train_users_data():
 	 fname = "Data/cf-train-1-users.dat"
@@ -125,7 +141,7 @@ def read_and_create_user_LibCount():
 
 #should return <class 'numpy.ndarray'> representation of the user library count
 def read_and_create_paper_UserLibFreqCount():
-	 fname = "Data/items.dat"
+	 fname = "Data/items.dat" 
 	 paper_lib = np.zeros(shape=(16981), dtype=np.int32) # both have +1 dimension
 	 paper_id = 1
 	 for line in open(fname):
@@ -175,6 +191,51 @@ def read_and_create_word_paper_FreqCount():
 	 print('MAX Word Frequency : ' + str(max_word_freq))
 	 return words_dict
 
+
+
+#should return <class 'numpy.ndarray'> representation of the user library count
+def read_and_create_term_frequency():
+	 fname = "Data/mult.dat"
+	 term_frequency = np.zeros(shape=(16980, 8000), dtype=np.int32) # both have +1 dimension
+	 
+	 doc_id = 0
+	 
+	 for line in open(fname):
+	 	wf_tuple = line.split()
+	 	wf_tuple.pop(0)
+	 	for wf in wf_tuple:
+	 		word_freq = wf.split(':')
+	 		
+	 		if(len(word_freq)==2):
+	 			id = int(word_freq[0])
+	 			freq = int(word_freq[1])
+		 		term_frequency[doc_id][id] = freq
+	 	doc_id+=1
+
+	 return term_frequency
+
+
+
+#should return <class 'numpy.ndarray'> representation of the user library count
+def read_and_create_document_frequency():
+	 fname = "Data/mult.dat"
+	 max_word_freq = 0
+	 words_dict = {}
+	 for line in open(fname):
+	 	docs = line.split()
+	 	docs.pop(0)
+	 	for d in docs:
+	 		wf = d.split(':')
+	 		if(len(wf)==2):
+	 			word_id = int(wf[0])
+		 		if(word_id in words_dict):
+		 			words_dict[word_id] += 1
+		 		else:
+		 			words_dict[word_id] = 1
+		 		if(words_dict[word_id] > max_word_freq):
+		 			max_word_freq = words_dict[word_id]
+	 print('MAX Word Frequency : ' + str(max_word_freq))
+	 return words_dict
 
 def read_generated_csv(right_now):
 	 fname = "out__"+right_now+".csv"
@@ -458,7 +519,11 @@ def get_cruve_readings(readings_file):
 # create_trimmed_users_data()
 # X = read_and_create_trimmed_user_Matrix() 
 # print(X.shape)
-
+X = read_and_create_user_Matrix()
+# str = np.array2string(X[21], precision=2, separator=',',suppress_small=True)
+str = X[0].tolist()
+print(X.shape)
+print(str)
 # read_generated_csv()
 # #
 # print(read_generated_csv())
@@ -475,7 +540,16 @@ def get_cruve_readings(readings_file):
 # create_trimmed_train_users_data()
 # create_trimmed_test_users_data()
 
-read_and_create_paper_wordFreqCount()
+# read_and_create_paper_wordFreqCount()
+
+# tf = read_and_create_term_frequency()
+# print(tf.shape)
+# print(tf[0])
+# print(tf[tf.shape[0] - 1])
+
+# df = read_and_create_document_frequency()
+# print(df)
+# print(df[0])
 
 #============================================
 # run after the out.csv is generated
