@@ -1,7 +1,7 @@
 import numpy as np
 from data import read_user
 def cal_rec(p,cut):
-    R_true = read_user('cf-test-1-users.dat')
+    R_true = read_user('ordered-cf-test-1-users.dat')
     dir_save = 'cdl'+str(p)
     U = np.mat(np.loadtxt(dir_save+'/final-U.dat.demo'))
     V = np.mat(np.loadtxt(dir_save+'/final-V.dat.demo'))
@@ -22,7 +22,6 @@ def cal_rec(p,cut):
         fp.write('%d:' % cnt_hit)
         fp.write(' '.join(map(str,l_rec)))
         fp.write('\n')
-        break
     fp.close()
 
-cal_rec(1,8)
+cal_rec(1,10)

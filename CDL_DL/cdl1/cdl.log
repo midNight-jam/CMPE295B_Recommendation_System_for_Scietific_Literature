@@ -1,1 +1,4 @@
 p1: lambda_v/lambda_u/ratio/K: 10.000000/1.000000/0.010000/50
+Epoch 1 - tr_err/bcd_err/rec_err: 53786067.5/27755.0/53758312.5
+Iter 9 - E: 23042.069
+Iter 19 - E: 22953.959

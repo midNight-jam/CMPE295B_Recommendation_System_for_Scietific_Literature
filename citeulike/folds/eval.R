@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # Evaluate the results of CTR using recall.
-dyn.load("utils.so")
+#dyn.load("utils.so")
 
 library(plyr)
 
