@@ -4,8 +4,10 @@ import pandas as pd
 import numpy as np
 import datetime
 
-# matrix = data.read_and_create_user_Matrix()
-matrix = data.read_and_create_trimmed_user_Matrix()
+
+train_file_name = "Data/trim/users_5551_papers_6000_libsize_15_train_0.25_.dat"
+matrix = data.read_and_create_trimmed_user_Matrix(train_file_name, data.trimmed_users_count, data.trimmed_papers_count)
+
 print('*' * 9)
 print('SHape of matrix from data.py')
 print(matrix.shape)
@@ -14,8 +16,8 @@ print('*' * 9)
 print('*' * 29)
 right_now = str(datetime.datetime.now().isoformat())
 
-# num_input = 16980
-num_input = 6000
+
+num_input = 6000    # which is - data.trimmed_papers_count = 6000
 num_hidden_0=4096
 num_hidden_1=2048
 num_hidden_2=1024
@@ -116,8 +118,8 @@ local_init = tf.local_variables_initializer()
 losses_plot = []
 
 with tf.Session() as session:
-    epochs = 100
-    batch_size = 40
+    epochs = 30
+    batch_size = 72
 
     session.run(init)
     session.run(local_init)

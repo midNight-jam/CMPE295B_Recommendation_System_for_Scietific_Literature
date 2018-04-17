@@ -10,7 +10,7 @@ fname = "Data/users.dat"
 # fname = "Data/cf-train-1-users.dat"
 # fname = "Data/fraction.dat"
 output_dir = "zzOutput/"
-trimmed_users_count = 500
+trimmed_users_count = 1865
 trimmed_papers_count = 6000
 threshold = 0.02
 threshold_lib_size = 15
@@ -40,8 +40,8 @@ def read_and_create_user_Matrix():
 	 return user_matrix
 
 #should return <class 'numpy.ndarray'> representation of the user matrix
-def read_and_create_trimmed_user_Matrix():
-	 name = "Data/trimmed-cf-test-1-users_{0}u_{1}p.dat".format(trimmed_users_count, trimmed_papers_count)
+def read_and_create_trimmed_user_Matrix(name, trimmed_users_count, trimmed_papers_count):
+	 # name = "Data/trimmed-cf-test-1-users_{0}u_{1}p.dat".format(trimmed_users_count, trimmed_papers_count)
 	 user_matrix = np.zeros((trimmed_users_count, trimmed_papers_count), dtype=np.int32)
 
 	 user_id = 0
@@ -196,7 +196,7 @@ def read_and_create_paper_word_freq_Matrix():
 def read_and_create_user_LibCount():
 	 fname = "Data/users.dat"
 	 user_lib = np.zeros(shape=(5552), dtype=np.int32) # both have +1 dimension
-	 user_id = 1
+	 user_id = 0
 	 for line in open(fname):
 	 	docs = line.split()
 	 	count = docs.pop(0)
@@ -209,7 +209,7 @@ def read_and_create_user_LibCount():
 def read_and_create_paper_UserLibFreqCount():
 	 fname = "Data/items.dat" 
 	 paper_lib = np.zeros(shape=(16981), dtype=np.int32) # both have +1 dimension
-	 paper_id = 1
+	 paper_id = 0
 	 for line in open(fname):
 	 	users = line.split()
 	 	count = users.pop(0)
@@ -351,8 +351,8 @@ def read_generated_user_test_pred_dictionary(right_now):
 	 pred_data = genfromtxt(pred_file, delimiter=',')
 	 pred_user_dict = {}
 	 pred_user_dict_paper_info = {}
-	 user_id = 1;
-
+	 user_id = 0;
+	 test_file = "Data/trim/users_5551_papers_6000_libsize_15_test_0.25_.dat"
 	 for pred in pred_data:
 	 	pred_user_dict[user_id] = []
 	 	pred_user_dict_paper_info[user_id] = {}
@@ -364,7 +364,7 @@ def read_generated_user_test_pred_dictionary(right_now):
 	 		doc_id += 1
 	 	user_id += 1
 
-	 user_id = 1;
+	 user_id = 0;
 	 test_user_dict = {}
 
 	 for line in open(test_file):
@@ -390,9 +390,11 @@ def preicsion(right_now):
 	 final_precision = 0.0
 	 max_precision = 0.0
 	 included_users = 0
-
+	 precision_output_name = output_dir+'precision__'+right_now+'.dat'
+	 precision_file = open(precision_output_name,"w")
+	 
 	 for i  in range(user_count):
-	 	i += 1
+	 	# i += 1
 	 	users_likes_count = len(pred[i])
 	 	
 	 	if(users_likes_count < 1):
@@ -414,7 +416,7 @@ def preicsion(right_now):
 	 		max_precision = user_precision
 
 	 	print(' u '+ str(i)+'- p '+str(user_precision))
-
+	 	precision_file.write(' u '+ str(i)+'- p \n'+str(user_precision))
 	 	final_precision += user_precision
 
 	 print('-'*50)
@@ -427,8 +429,6 @@ def preicsion(right_now):
 	 print('Max Precision : ' + str(max_precision))
 	 print('Final Precision : ' + str(final_precision))
 
-	 precision_output_name = output_dir+'precision__'+right_now+'.dat'
-	 precision_file = open(precision_output_name,"w")
 	 precision_file.write('final Precision / included users\n')
 	 precision_file.write('{0} / {1}\n'.format(final_precision, included_users))
 	 precision_file.write('Total users - {0}\n'.format(user_count))
@@ -450,8 +450,10 @@ def preicsion_M(right_now):
 	 included_users = 0
 	 M = 10
 
+	 precision_M_output_name = output_dir+'precision__@_M_'+right_now+'.dat'
+	 precision_M_file = open(precision_M_output_name,"w")
+
 	 for i  in range(user_count):
-	 	i += 1 # as user ids begin @ 1
 	 	users_likes_count = len(pred[i])
 	 	
 	 	if(users_likes_count < M):
@@ -479,7 +481,7 @@ def preicsion_M(right_now):
 	 		max_precision_M = user_precision_M
 
 	 	print(' u {0} - p {1}'.format(i, user_precision_M))
-
+	 	precision_M_file.write(' u {0} - p {1}\n'.format(i, user_precision_M))
 	 	final_precision_M += user_precision_M
 
 	 print('-'*50)
@@ -494,8 +496,6 @@ def preicsion_M(right_now):
 	 print('Max Precision @ {0}- : {1}'.format(M, max_precision_M))
 	 print('Final Precision @ {0} : {1}'.format(M,final_precision_M))
 
-	 precision_M_output_name = output_dir+'precision__@_M_'+right_now+'.dat'
-	 precision_M_file = open(precision_M_output_name,"w")
 	 precision_M_file.write('Precision @ M\n M = {0}\n'.format(M))
 	 precision_M_file.write('final Precision / included users\n')
 	 precision_M_file.write('{0} / {1}\n'.format(final_precision_M, included_users))
@@ -517,8 +517,10 @@ def recall(right_now):
 	 max_recall = 0.0
 	 included_users = 0
 
+	 recall_output_name = output_dir+'recall__'+right_now+'.dat'
+	 recall_file = open(recall_output_name,"w")
+	 
 	 for i  in range(user_count):
-	 	i += 1
 	 	users_relevant_docs_count = len(test[i])
 	 	
 	 	# if there are no predictions or no relevant docs in test(divide by 0 else)
@@ -541,7 +543,7 @@ def recall(right_now):
 	 		max_recall = user_recall
 
 	 	print(' u {0} - p {1}'.format(i, user_recall))
-
+	 	recall_file.write(' u {0} - p {1}\n'.format(i, user_recall))
 	 	final_recall += user_recall
 
 	 print('-'*50)
@@ -554,8 +556,6 @@ def recall(right_now):
 	 print('Max Recall : ' + str(max_recall))
 	 print('Final Recall : ' + str(final_recall))
 	 
-	 recall_output_name = output_dir+'recall__'+right_now+'.dat'
-	 recall_file = open(recall_output_name,"w")
 	 recall_file.write('final Recall / included users\n')
 	 recall_file.write('{0} / {1}\n'.format(final_recall, included_users))
 	 recall_file.write('Total users - {0}\n'.format(user_count))
@@ -583,21 +583,23 @@ def get_cruve_readings(readings_file):
 # X = read_and_create_user_Matrix()
 
 # create_trimmed_users_data()
-# X = read_and_create_trimmed_user_Matrix() 
-# print(X.shape)
 
-# X = read_and_create_user_Matrix()
-# # str = np.array2string(X[21], precision=2, separator=',',suppress_small=True)
+# train_file_name = "Data/trim/users_5551_papers_6000_libsize_15_train_0.25_.dat"
+# X = read_and_create_trimmed_user_Matrix(train_file_name, trimmed_users_count, trimmed_papers_count) 
 # str = X[0].tolist()
 # print(X.shape)
 # print(str)
+
+# X = read_and_create_user_Matrix()
+# # str = np.array2string(X[21], precision=2, separator=',',suppress_small=True)
+
 
 # fname = "Data/users.dat"
 # name = "Data/trim/users_5551_papers_{0}_libsize_{1}.dat".format(trimmed_papers_count, threshold_lib_size)
 # trim_users_data(fname, name);
 
-dname = "Data/trim/users_5551_papers_{0}_libsize_{1}.dat".format(trimmed_papers_count, threshold_lib_size)
-split_users_data(dname)
+# dname = "Data/trim/users_5551_papers_{0}_libsize_{1}.dat".format(trimmed_papers_count, threshold_lib_size)
+# split_users_data(dname)
 
 # read_generated_csv()
 # #
@@ -629,12 +631,12 @@ split_users_data(dname)
 #============================================
 # run after the out.csv is generated
 #============================================
-# right_now = "2018-04-09T19:13:04.874678"
-# read_generated_csv_dictionary(right_now)
-# read_generated_csv(right_now)
-# preicsion(right_now)
-# preicsion_M(right_now)
-# recall(right_now)
+right_now = "2018-04-16T23:10:42.536867"
+read_generated_csv_dictionary(right_now)
+read_generated_csv(right_now)
+preicsion(right_now)
+preicsion_M(right_now)
+recall(right_now)
 #============================================
 
 ########################################################################
