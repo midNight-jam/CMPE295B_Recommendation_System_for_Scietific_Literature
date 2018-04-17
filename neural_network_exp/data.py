@@ -1,17 +1,20 @@
 import numpy as np
 import pandas as pd
+import numpy.random as random
 from numpy import genfromtxt
 import datetime
+import math
 
 # fname = "Data/small_users.dat"
 fname = "Data/users.dat"
 # fname = "Data/cf-train-1-users.dat"
 # fname = "Data/fraction.dat"
 output_dir = "zzOutput/"
-trimmed_users_count = 1000
-trimmed_papers_count = 16980
+trimmed_users_count = 500
+trimmed_papers_count = 6000
 threshold = 0.02
-threshold_lib_size = 5
+threshold_lib_size = 15
+test_train_split = 0.25 # we do ceil to round
 test_file = "Data/trimmed-cf-test-1-users_{0}u_{1}p.dat".format(trimmed_users_count, trimmed_papers_count)
 
 def read_user_data():
@@ -68,6 +71,11 @@ def read_and_create_trimmed_user_Matrix_Threshold():
 	 	user_id += 1
 	 return user_matrix
 
+def create_trimmed_test_train_data():
+	create_trimmed_train_users_data()
+	create_trimmed_test_users_data()
+
+
 def create_trimmed_train_users_data():
 	 fname = "Data/cf-train-1-users.dat"
 	 name = "Data/trimmed-cf-train-1-users_{0}u_{1}p.dat".format(trimmed_users_count, trimmed_papers_count)
@@ -79,7 +87,7 @@ def create_trimmed_test_users_data():
 	 create_trim_file(fname, name)
 
 def create_trim_file(fname, name):
-	 user_id = 1
+	 user_id = 0
 	 trimmed_file = open(name,"w")
 	 for line in open(fname):
 	 	docs = line.split()
@@ -100,6 +108,64 @@ def create_trim_file(fname, name):
 	 	if(user_id > trimmed_users_count):
 	 		break
 	 trimmed_file.close()
+
+
+def trim_users_data(fname, name):
+	 trimmed_file = open(name,"w")
+	 for line in open(fname):
+	 	docs = line.split()
+	 	orig_count = int(docs.pop(0))
+
+	 	trimmed_docs = []
+	 	user_trimmed_docs_count = 0
+
+	 	for d in docs:
+	 		if(int(d) <= trimmed_papers_count):
+	 			trimmed_docs.append(d)
+	 			user_trimmed_docs_count += 1
+	 	
+	 	if(user_trimmed_docs_count >= threshold_lib_size):
+		 	trimmed_docs.insert(0, user_trimmed_docs_count)	# adding new count
+		 	trimmed_line = ' '.join(str(td) for td in trimmed_docs)
+		 	trimmed_file.write(trimmed_line+"\n")
+
+	 trimmed_file.close()
+
+
+def split_users_data(dname):
+	 data_name = dname.split('.');
+	 train_name = data_name[0] + '_train' +'_'+str(test_train_split)+'_.' + data_name[1];
+	 test_name = data_name[0] + '_test' +'_'+str(test_train_split)+'_.' + data_name[1];
+
+	 train_file = open(train_name,"w")
+	 test_file = open(test_name,"w")
+
+	 for line in open(dname):
+	 	docs = line.split()
+	 	orig_count = int(docs.pop(0))
+		
+	 	random.shuffle(docs)
+	 	total = len(docs)
+	 	sep_out = math.ceil(test_train_split * total)
+	 	test_docs = []
+
+	 	for i in range(sep_out):
+	 		test_docs.append(docs.pop())
+
+	 	train_docs_count  = len(docs)
+	 	test_docs_count  = len(test_docs)
+
+	 	docs.insert(0, train_docs_count)	# adding new count to test data
+	 	test_docs.insert(0, test_docs_count)	# adding new count to train data
+	 	
+	 	train_line = ' '.join(str(td) for td in docs)
+	 	test_line = ' '.join(str(td) for td in test_docs)
+
+	 	train_file.write(train_line+"\n")
+	 	test_file.write(test_line+"\n")
+
+	 train_file.close()
+	 test_file.close()
 
 
 #should return <class 'numpy.ndarray'> representation of the user matrix
@@ -519,11 +585,20 @@ def get_cruve_readings(readings_file):
 # create_trimmed_users_data()
 # X = read_and_create_trimmed_user_Matrix() 
 # print(X.shape)
-X = read_and_create_user_Matrix()
-# str = np.array2string(X[21], precision=2, separator=',',suppress_small=True)
-str = X[0].tolist()
-print(X.shape)
-print(str)
+
+# X = read_and_create_user_Matrix()
+# # str = np.array2string(X[21], precision=2, separator=',',suppress_small=True)
+# str = X[0].tolist()
+# print(X.shape)
+# print(str)
+
+# fname = "Data/users.dat"
+# name = "Data/trim/users_5551_papers_{0}_libsize_{1}.dat".format(trimmed_papers_count, threshold_lib_size)
+# trim_users_data(fname, name);
+
+dname = "Data/trim/users_5551_papers_{0}_libsize_{1}.dat".format(trimmed_papers_count, threshold_lib_size)
+split_users_data(dname)
+
 # read_generated_csv()
 # #
 # print(read_generated_csv())
