@@ -118,8 +118,8 @@ local_init = tf.local_variables_initializer()
 losses_plot = []
 
 with tf.Session() as session:
-    epochs = 30
-    batch_size = 72
+    epochs = 19
+    batch_size = 100
 
     session.run(init)
     session.run(local_init)
@@ -165,8 +165,9 @@ with tf.Session() as session:
 ################################################
 ## Persist the results
 ################################################
+    pred, test, pred_tuples = data.read_generated_user_test_pred_dictionary(right_now)
     data.read_generated_csv_dictionary(right_now)
     data.read_generated_csv(right_now)
-    data.preicsion(right_now)
-    data.preicsion_M(right_now)
-    data.recall(right_now)
+    data.preicsion(pred, test, pred_tuples, right_now)
+    data.preicsion_M(pred, test, pred_tuples, right_now)
+    data.recall(pred, test, pred_tuples, right_now)

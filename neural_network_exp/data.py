@@ -5,25 +5,14 @@ from numpy import genfromtxt
 import datetime
 import math
 
-# fname = "Data/small_users.dat"
 fname = "Data/users.dat"
-# fname = "Data/cf-train-1-users.dat"
-# fname = "Data/fraction.dat"
 output_dir = "zzOutput/"
 trimmed_users_count = 1865
 trimmed_papers_count = 6000
-threshold = 0.02
+threshold = 0.01
 threshold_lib_size = 15
 test_train_split = 0.25 # we do ceil to round
 test_file = "Data/trimmed-cf-test-1-users_{0}u_{1}p.dat".format(trimmed_users_count, trimmed_papers_count)
-
-def read_user_data():
-	single=genfromtxt(fname,delimiter=' ', dtype=int)
-	return single
-
-def read_user_df():
-	df = pd.read_csv(fname, sep="|")
-	print (df)
 
 #should return <class 'numpy.ndarray'> representation of the user matrix
 def read_and_create_user_Matrix():
@@ -40,8 +29,8 @@ def read_and_create_user_Matrix():
 	 return user_matrix
 
 #should return <class 'numpy.ndarray'> representation of the user matrix
+#creates a sparse matrix of trimmed users.dat file
 def read_and_create_trimmed_user_Matrix(name, trimmed_users_count, trimmed_papers_count):
-	 # name = "Data/trimmed-cf-test-1-users_{0}u_{1}p.dat".format(trimmed_users_count, trimmed_papers_count)
 	 user_matrix = np.zeros((trimmed_users_count, trimmed_papers_count), dtype=np.int32)
 
 	 user_id = 0
@@ -56,6 +45,7 @@ def read_and_create_trimmed_user_Matrix(name, trimmed_users_count, trimmed_paper
 	 return user_matrix
 
 #should return <class 'numpy.ndarray'> representation of the user matrix
+#creates a sparse matrix of trimmed users.dat file, but including only users that have a library size of >= threshold
 def read_and_create_trimmed_user_Matrix_Threshold():
 	 name = "Data/trimmed-cf-test-1-users_{0}u_{1}p.dat".format(trimmed_users_count, trimmed_papers_count)
 	 user_matrix = np.zeros((trimmed_users_count, trimmed_papers_count), dtype=np.int32)
@@ -71,6 +61,9 @@ def read_and_create_trimmed_user_Matrix_Threshold():
 	 	user_id += 1
 	 return user_matrix
 
+# DO NOT USE THESE
+# all these 3 functions below ARE USELESS, they will be removed
+# they trim test and train file seperately which is not correct, but i am keeping the logic, incase if its used
 def create_trimmed_test_train_data():
 	create_trimmed_train_users_data()
 	create_trimmed_test_users_data()
@@ -109,7 +102,7 @@ def create_trim_file(fname, name):
 	 		break
 	 trimmed_file.close()
 
-
+# trims the whole users.dat file into a smaller file
 def trim_users_data(fname, name):
 	 trimmed_file = open(name,"w")
 	 for line in open(fname):
@@ -131,7 +124,7 @@ def trim_users_data(fname, name):
 
 	 trimmed_file.close()
 
-
+# splits the input users.dat file in to test and train files, using the split % "test_train_split" defined abover
 def split_users_data(dname):
 	 data_name = dname.split('.');
 	 train_name = data_name[0] + '_train' +'_'+str(test_train_split)+'_.' + data_name[1];
@@ -380,8 +373,8 @@ def read_generated_user_test_pred_dictionary(right_now):
 	 return pred_user_dict, test_user_dict, pred_user_dict_paper_info
 
 
-def preicsion(right_now):
-	 pred, test, pred_tuples = read_generated_user_test_pred_dictionary(right_now)
+def preicsion(pred, test, pred_tuples, right_now):
+	 # pred, test, pred_tuples = read_generated_user_test_pred_dictionary(right_now)
 	 if(len(pred) != len(test) or len(pred) != len(pred_tuples)):
 	 	print("Lengths of predicted & test users dictionary doesnt match by row Count")
 	 	return
@@ -437,10 +430,10 @@ def preicsion(right_now):
 	 precision_file.write('Final Precision : {0}\n'.format(final_precision))
 	 precision_file.close()
 
-def preicsion_M(right_now):
+def preicsion_M(pred, test, pred_tuples, right_now):
 	 #Precision@M = # items the user likes in the list / M
-	 pred, test, pred_info = read_generated_user_test_pred_dictionary(right_now)
-	 if(len(pred) != len(test) or len(pred) != len(pred_info)):
+	 # pred, test, pred_info = read_generated_user_test_pred_dictionary(right_now)
+	 if(len(pred) != len(test) or len(pred) != len(pred_tuples)):
 	 	print("Lengths of predicted & test users dictionary doesnt match by row Count")
 	 	return
 	 
@@ -506,9 +499,9 @@ def preicsion_M(right_now):
 	 precision_M_file.close()
 
 
-def recall(right_now):
-	 pred, test, pred_info = read_generated_user_test_pred_dictionary(right_now)
-	 if(len(pred) != len(test) or len(pred) != len(pred_info)):
+def recall(pred, test, pred_tuples, right_now):
+	 # pred, test, pred_info = read_generated_user_test_pred_dictionary(right_now)
+	 if(len(pred) != len(test) or len(pred) != len(pred_tuples)):
 	 	print("Lengths of predicted & test users dictionary doesnt match by row Count")
 	 	return
 	 
@@ -572,17 +565,11 @@ def get_cruve_readings(readings_file):
 	 	readings.append(float(line))
 	 return readings
 
+
+
 ########################################################################
 # All below must be commented, debug only
 ########################################################################
-
-# X = read_user_data()
-# X = read_user_data_ol()
-# X = read_user_df()
-# X = read_user_df()
-# X = read_and_create_user_Matrix()
-
-# create_trimmed_users_data()
 
 # train_file_name = "Data/trim/users_5551_papers_6000_libsize_15_train_0.25_.dat"
 # X = read_and_create_trimmed_user_Matrix(train_file_name, trimmed_users_count, trimmed_papers_count) 
@@ -631,12 +618,12 @@ def get_cruve_readings(readings_file):
 #============================================
 # run after the out.csv is generated
 #============================================
-right_now = "2018-04-16T23:10:42.536867"
-read_generated_csv_dictionary(right_now)
-read_generated_csv(right_now)
-preicsion(right_now)
-preicsion_M(right_now)
-recall(right_now)
+# right_now = "2018-04-16T23:10:42.536867"
+# read_generated_csv_dictionary(right_now)
+# read_generated_csv(right_now)
+# preicsion(right_now)
+# preicsion_M(right_now)
+# recall(right_now)
 #============================================
 
 ########################################################################
