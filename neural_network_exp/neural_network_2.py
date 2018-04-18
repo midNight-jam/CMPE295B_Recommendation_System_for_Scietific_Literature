@@ -104,7 +104,7 @@ losses_plot = []
 
 with tf.Session() as session:
     epochs = 10
-    batch_size = 200
+    batch_size = 32
 
     session.run(init)
     session.run(local_init)

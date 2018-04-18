@@ -5,22 +5,20 @@ from numpy import genfromtxt
 import datetime
 import math
 
-fname = "Data/users.dat"
+source_data_file = "Data/users.dat"
 output_dir = "zzOutput/"
 trimmed_users_count = 1865
 trimmed_papers_count = 6000
 threshold = 0.01
 threshold_lib_size = 10
 test_train_split = 0.25  # we do ceil to round
-test_file = "Data/trimmed-cf-test-1-users_{0}u_{1}p.dat".format(trimmed_users_count, trimmed_papers_count)
 
 
 # should return <class 'numpy.ndarray'> representation of the user matrix
 def read_and_create_user_Matrix():
   user_matrix = np.zeros((5551, 16980), dtype=np.float32)
-  fname = "Data/users.dat"
   user_id = 0
-  for line in open(fname):
+  for line in open(source_data_file):
     docs = line.split()
     docs.pop(0)
     user_papers = map(int, docs)
@@ -282,7 +280,7 @@ def preicsion(pred, test, pred_tuples, right_now):
       max_precision = user_precision
 
     print(' u ' + str(i) + '- p ' + str(user_precision))
-    precision_file.write(' u ' + str(i) + '- p \n' + str(user_precision))
+    precision_file.write(' u {0} - p {1}\n'.format(i, user_precision))
     final_precision += user_precision
 
   print('-' * 50)
