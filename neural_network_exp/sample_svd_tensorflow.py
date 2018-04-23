@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+import config
 
 # setting the random seed
 
@@ -66,3 +67,9 @@ best_items = session.run([best_items_t], feed_dict=feed_dict)
 # Suggestions for user 10, 20
 for i in range(10, 20):
   print('User {}: {}'.format(i, best_items[0][i]))
+
+text_file = open(config.sample_svd_output_file, "w")
+for i in range(0, nb_users):
+  docs =  " ".join(str(d) for d in best_items[0][i])
+  text_file.write('{0} {1}\n'.format(len(best_items[0][i]), docs))
+text_file.close()

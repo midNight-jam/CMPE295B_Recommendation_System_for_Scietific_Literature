@@ -14,6 +14,8 @@ number_words = 8000
 number_latent_factors = 2500
 top_k_products = 35
 
+
+
 train_file = 'Data/trim_users_5551_6000_papers__test_0.3_.dat'
 test_file = 'Data/trim_users_5551_6000_papers__train_0.3_.dat'
 output_dir = "zzOutput/"
@@ -31,7 +33,7 @@ recall_output_file = output_dir + "recall__" + right_now + ".dat"
 recall_readings_output_file = output_dir + "recall__readings__" + right_now + ".dat"
 
 svd_output_file = output_dir + "svd__" + right_now + ".dat"
-
+sample_svd_output_file = output_dir + "svd__sample__" + right_now + ".dat"
 trimmed_users_count = 5551
 trimmed_papers_count = 6001
 
