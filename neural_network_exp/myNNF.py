@@ -49,7 +49,7 @@ def decoder(x):
     return layer_2
 
 
-# Construct model
+# Construct models
 
 encoder_op = encoder(X)
 decoder_op = decoder(encoder_op)

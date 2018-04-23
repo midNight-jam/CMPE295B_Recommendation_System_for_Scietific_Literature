@@ -4,21 +4,17 @@ import numpy.random as random
 from numpy import genfromtxt
 import datetime
 import math
-
-source_data_file = "Data/users.dat"
-output_dir = "zzOutput/"
-trimmed_users_count = 1865
-trimmed_papers_count = 6000
-threshold = 0.01
-threshold_lib_size = 10
-test_train_split = 0.25  # we do ceil to round
+from sklearn.feature_extraction.text import TfidfTransformer
+from operator import itemgetter
+from numpy import genfromtxt
+import config
 
 
 # should return <class 'numpy.ndarray'> representation of the user matrix
 def read_and_create_user_Matrix():
-  user_matrix = np.zeros((5551, 16980), dtype=np.float32)
+  user_matrix = np.zeros((config.numbers_users, config.numbers_papers), dtype=np.float32)
   user_id = 0
-  for line in open(source_data_file):
+  for line in open( config.train_file):
     docs = line.split()
     docs.pop(0)
     user_papers = map(int, docs)
@@ -30,8 +26,8 @@ def read_and_create_user_Matrix():
 
 # should return <class 'numpy.ndarray'> representation of the user matrix
 # creates a sparse matrix of trimmed users.dat file
-def read_and_create_trimmed_user_Matrix(name, trimmed_users_count, trimmed_papers_count):
-  user_matrix = np.zeros((trimmed_users_count, trimmed_papers_count), dtype=np.int32)
+def read_and_create_trimmed_user_Matrix(name):
+  user_matrix = np.zeros((config.trimmed_users_count, config.trimmed_papers_count), dtype=np.int32)
 
   user_id = 0
   for line in open(name):
@@ -46,16 +42,16 @@ def read_and_create_trimmed_user_Matrix(name, trimmed_users_count, trimmed_paper
 
 
 # should return <class 'numpy.ndarray'> representation of the user matrix
-# creates a sparse matrix of trimmed users.dat file, but including only users that have a library size of >= threshold
+# creates a sparse matrix of trimmed users.dat file, but including only users that have a library size of >= config.rating_threshold
 def read_and_create_trimmed_user_Matrix_Threshold():
-  name = "Data/trimmed-cf-test-1-users_{0}u_{1}p.dat".format(trimmed_users_count, trimmed_papers_count)
-  user_matrix = np.zeros((trimmed_users_count, trimmed_papers_count), dtype=np.int32)
+  name = "Data/trimmed-cf-test-1-users_{0}u_{1}p.dat".format(config.trimmed_users_count, config.trimmed_papers_count)
+  user_matrix = np.zeros((config.trimmed_users_count, config.trimmed_papers_count), dtype=np.int32)
 
   user_id = 0
   for line in open(name):
     docs = line.split()
     docs.pop(0)  # removing the paper count
-    if (len(docs) > threshold_lib_size):
+    if (len(docs) > config.lib_size_threshold):
       user_papers = map(int, docs)
       for d in user_papers:
         user_matrix[user_id][d] = 1
@@ -74,14 +70,14 @@ def trim_users_data(fname, name):
     user_trimmed_docs_count = 0
 
     for d in docs:
-      if (int(d) <= trimmed_papers_count):
+      if (int(d) <= config.trimmed_papers_count):
         trimmed_docs.append(d)
         user_trimmed_docs_count += 1
 
-    if (user_trimmed_docs_count >= threshold_lib_size):
-      trimmed_docs.insert(0, user_trimmed_docs_count)  # adding new count
-      trimmed_line = ' '.join(str(td) for td in trimmed_docs)
-      trimmed_file.write(trimmed_line + "\n")
+    # if (user_trimmed_docs_count >= config.lib_size_threshold):
+    trimmed_docs.insert(0, user_trimmed_docs_count)  # adding new count
+    trimmed_line = ' '.join(str(td) for td in trimmed_docs)
+    trimmed_file.write(trimmed_line + "\n")
 
   trimmed_file.close()
 
@@ -89,8 +85,8 @@ def trim_users_data(fname, name):
 # splits the input users.dat file in to test and train files, using the split % "test_train_split" defined abover
 def split_users_data(dname):
   data_name = dname.split('.');
-  train_name = data_name[0] + '_train' + '_' + str(test_train_split) + '_.' + data_name[1];
-  test_name = data_name[0] + '_test' + '_' + str(test_train_split) + '_.' + data_name[1];
+  train_name = data_name[0] + '_train' + '_' + str(config.test_train_split) + '_.' + data_name[1];
+  test_name = data_name[0] + '_test' + '_' + str(config.test_train_split) + '_.' + data_name[1];
 
   train_file = open(train_name, "w")
   test_file = open(test_name, "w")
@@ -101,7 +97,7 @@ def split_users_data(dname):
 
     random.shuffle(docs)
     total = len(docs)
-    sep_out = math.ceil(test_train_split * total)
+    sep_out = math.ceil(config.test_train_split * total)
     test_docs = []
 
     for i in range(sep_out):
@@ -145,6 +141,14 @@ def read_and_create_term_frequency():
   return term_frequency
 
 
+def tf_idf_papers_vs_words_freq():
+  tf = read_and_create_term_frequency();
+  tf_transformer = TfidfTransformer().fit(tf)
+  tf_idf_mat = tf_transformer.transform(tf)
+  tf = tf_idf_mat.toarray()
+  print(tf_idf_mat.shape)
+  return tf
+
 # should return <class 'numpy.ndarray'> representation of the user library count
 def read_and_create_document_frequency():
   fname = "Data/mult.dat"
@@ -170,13 +174,13 @@ def read_and_create_document_frequency():
 def read_generated_csv(right_now):
   fname = "out__" + right_now + ".csv"
   rec_data = genfromtxt(fname, delimiter=',')
-  gen_pred_file = output_dir + 'gen__pred__docs' + right_now + '.dat'
+  gen_pred_file = config.output_dir + 'gen__pred__docs' + right_now + '.dat'
   rec_file = open(gen_pred_file, "w")
   for r in rec_data:
     doc_id = 0
     rec_docs = []
     for p in r:
-      if (p > threshold):
+      if (p > config.rating_threshold):
         rec_docs.append(doc_id)
       doc_id += 1
     rec_docs.insert(0, len(rec_docs))  # adding new count
@@ -188,14 +192,14 @@ def read_generated_csv(right_now):
 def read_generated_csv_dictionary(right_now):
   rec_data = genfromtxt('out__' + right_now + '.csv', delimiter=',')
   # right_now = str(datetime.datetime.now().isoformat())
-  gen_pred_file = output_dir + 'gen__pred__sorted__' + right_now + '.dat'
+  gen_pred_file = config.output_dir + 'gen__pred__sorted__' + right_now + '.dat'
   rec_file = open(gen_pred_file, "w")
 
   for r in rec_data:
     pred = {}
     doc_id = 0
     for p in r:
-      if (p >= threshold):
+      if (p >= config.rating_threshold):
         pred[doc_id] = p
       doc_id += 1
 
@@ -216,13 +220,13 @@ def read_generated_user_test_pred_dictionary(right_now):
   pred_user_dict = {}
   pred_user_dict_paper_info = {}
   user_id = 0;
-  test_file = "Data/trim/users_5551_papers_6000_libsize_15_test_0.25_.dat"
+  test_file = "Data/trim/users_5551_papers_8500.dat"
   for pred in pred_data:
     pred_user_dict[user_id] = []
     pred_user_dict_paper_info[user_id] = {}
     doc_id = 0
     for p in pred:
-      if (p >= threshold):
+      if (p >= config.rating_threshold):
         pred_user_dict[user_id].append(doc_id)
         pred_user_dict_paper_info[user_id][doc_id] = p
       doc_id += 1
@@ -244,258 +248,87 @@ def read_generated_user_test_pred_dictionary(right_now):
   return pred_user_dict, test_user_dict, pred_user_dict_paper_info
 
 
-def preicsion(pred, test, pred_tuples, right_now):
-  # pred, test, pred_tuples = read_generated_user_test_pred_dictionary(right_now)
-  if (len(pred) != len(test) or len(pred) != len(pred_tuples)):
-    print("Lengths of predicted & test users dictionary doesnt match by row Count")
-    return
-
-  user_count = len(pred)
-  final_precision = 0.0
-  max_precision = 0.0
-  included_users = 0
-  precision_output_name = output_dir + 'precision__' + right_now + '.dat'
-  precision_file = open(precision_output_name, "w")
-
-  for i in range(user_count):
-    # i += 1
-    users_likes_count = len(pred[i])
-
-    if (users_likes_count < 1):
-      # print("Skipping for user {} as no predictions found".format(i))
-      continue
-
-    included_users += 1
-    pred_matches_count = 0
-    test_users_doc = test[i]
-    test_users_set = set(test_users_doc)
-    pred_users_doc = pred[i]
-
-    for pd in pred_users_doc:
-      if (pd in test_users_set):
-        pred_matches_count += 1
-
-    user_precision = pred_matches_count / users_likes_count
-    if (user_precision > max_precision):
-      max_precision = user_precision
-
-    print(' u ' + str(i) + '- p ' + str(user_precision))
-    precision_file.write(' u {0} - p {1}\n'.format(i, user_precision))
-    final_precision += user_precision
-
-  print('-' * 50)
-  print('final Precision / included users')
-  print('{0} / {1}'.format(final_precision, included_users))
-  final_precision = final_precision / included_users
-
-  print('Total users - {0}'.format(user_count))
-  print('Users included - {0}'.format(included_users))
-  print('Max Precision : ' + str(max_precision))
-  print('Final Precision : ' + str(final_precision))
-
-  precision_file.write('final Precision / included users\n')
-  precision_file.write('{0} / {1}\n'.format(final_precision, included_users))
-  precision_file.write('Total users - {0}\n'.format(user_count))
-  precision_file.write('Users included - {0}\n'.format(included_users))
-  precision_file.write('Max Precision : {0}\n'.format(max_precision))
-  precision_file.write('Final Precision : {0}\n'.format(final_precision))
-  precision_file.close()
-
-
-def preicsion_M(pred, test, pred_tuples, right_now):
-  # Precision@M = # items the user likes in the list / M
-  # pred, test, pred_info = read_generated_user_test_pred_dictionary(right_now)
-  if (len(pred) != len(test) or len(pred) != len(pred_tuples)):
-    print("Lengths of predicted & test users dictionary doesnt match by row Count")
-    return
-
-  user_count = len(pred)
-  final_precision_M = 0.0
-  max_precision_M = 0.0
-  included_users = 0
-  M = 10
-
-  precision_M_output_name = output_dir + 'precision__@_M_' + right_now + '.dat'
-  precision_M_file = open(precision_M_output_name, "w")
-
-  for i in range(user_count):
-    users_likes_count = len(pred[i])
-
-    if (users_likes_count < M):
-      # print("Skipping for user {} as no predictions found".format(i))
-      continue
-
-    included_users += 1
-    pred_matches_count = 0
-    test_users_doc = test[i]
-    test_users_set = set(test_users_doc)
-    pred_users_doc = pred[i]
-    count = 0
-    keys_sorted_by_value_pred = sorted(pred, key=pred.get, reverse=True)
-
-    for pd in keys_sorted_by_value_pred:
-
-      if (pd in test_users_set):
-        pred_matches_count += 1
-      count += 1
-      if (count >= M):
-        break
-
-    user_precision_M = pred_matches_count / M
-    if (user_precision_M > max_precision_M):
-      max_precision_M = user_precision_M
-
-    print(' u {0} - p {1}'.format(i, user_precision_M))
-    precision_M_file.write(' u {0} - p {1}\n'.format(i, user_precision_M))
-    final_precision_M += user_precision_M
-
-  print('-' * 50)
-  print('Preicision @ M - {}'.format(M))
-  print('-' * 50)
-  print('final Precision / included users')
-  print('{0} / {1}'.format(final_precision_M, included_users))
-  final_precision_M = final_precision_M / included_users
-
-  print('Total users - {0}'.format(user_count))
-  print('Users included - {0}'.format(included_users))
-  print('Max Precision @ {0}- : {1}'.format(M, max_precision_M))
-  print('Final Precision @ {0} : {1}'.format(M, final_precision_M))
-
-  precision_M_file.write('Precision @ M\n M = {0}\n'.format(M))
-  precision_M_file.write('final Precision / included users\n')
-  precision_M_file.write('{0} / {1}\n'.format(final_precision_M, included_users))
-  precision_M_file.write('Total users - {0}\n'.format(user_count))
-  precision_M_file.write('Users included - {0}\n'.format(included_users))
-  precision_M_file.write('Max Precision @ {0} : {1}\n'.format(M, max_precision_M))
-  precision_M_file.write('Final Precision @ {0} : {1}\n'.format(M, final_precision_M))
-  precision_M_file.close()
-
-
-def recall(pred, test, pred_tuples, right_now):
-  # pred, test, pred_info = read_generated_user_test_pred_dictionary(right_now)
-  if (len(pred) != len(test) or len(pred) != len(pred_tuples)):
-    print("Lengths of predicted & test users dictionary doesnt match by row Count")
-    return
-
-  user_count = len(pred)
-  final_recall = 0.0
-  max_recall = 0.0
-  included_users = 0
-
-  recall_output_name = output_dir + 'recall__' + right_now + '.dat'
-  recall_file = open(recall_output_name, "w")
-
-  for i in range(user_count):
-    users_relevant_docs_count = len(test[i])
-
-    # if there are no predictions or no relevant docs in test(divide by 0 else)
-    if (len(pred[i]) < 1 or users_relevant_docs_count < 1):
-      # print("Skipping for user {} as no predictions found".format(i))
-      continue
-
-    included_users += 1
-    pred_matches_count = 0
-    test_users_doc = test[i]
-    test_users_set = set(test_users_doc)
-    pred_users_doc = pred[i]
-
-    for pd in pred_users_doc:
-      if (pd in test_users_set):
-        pred_matches_count += 1
-
-    user_recall = pred_matches_count / users_relevant_docs_count
-    if (user_recall > max_recall):
-      max_recall = user_recall
-
-    print(' u {0} - p {1}'.format(i, user_recall))
-    recall_file.write(' u {0} - p {1}\n'.format(i, user_recall))
-    final_recall += user_recall
-
-  print('-' * 50)
-  print('final Precision / included users')
-  print('{0} / {1}'.format(final_recall, included_users))
-  final_recall = final_recall / included_users
-
-  print('Total users - {0}'.format(user_count))
-  print('Users included - {0}'.format(included_users))
-  print('Max Recall : ' + str(max_recall))
-  print('Final Recall : ' + str(final_recall))
-
-  recall_file.write('final Recall / included users\n')
-  recall_file.write('{0} / {1}\n'.format(final_recall, included_users))
-  recall_file.write('Total users - {0}\n'.format(user_count))
-  recall_file.write('Users included - {0}\n'.format(included_users))
-  recall_file.write('Max Recall : {0}\n'.format(max_recall))
-  recall_file.write('Final Recall :{0}\n'.format(final_recall))
-  recall_file.close()
-
 
 def get_cruve_readings(readings_file):
   # readings_file = "loss_plot__2018-04-09T02:48:29.095769.dat"
   readings = []
   for line in open(readings_file):
-    readings.append(float(line))
+    docs = line.split()
+    val = float(docs[4])
+    readings.append(val)
   return readings
 
 
 
-  ########################################################################
-  # All below must be commented, debug only
-  ########################################################################
+########################################################################
+# All below must be commented, debug only
+########################################################################
 
-  # train_file_name = "Data/trim/users_5551_papers_6000_libsize_15_train_0.25_.dat"
-  # X = read_and_create_trimmed_user_Matrix(train_file_name, trimmed_users_count, trimmed_papers_count)
-  # str = X[0].tolist()
-  # print(X.shape)
-  # print(str)
+# train_file_name = "Data/trim/users_5551_papers_6000_libsize_15_train_0.25_.dat"
+# X = read_and_create_trimmed_user_Matrix(train_file_name, config.trimmed_users_count, config.trimmed_papers_count)
+# str = X[0].tolist()
+# print(X.shape)
+# print(str)
 
-  # X = read_and_create_user_Matrix()
-  # # str = np.array2string(X[21], precision=2, separator=',',suppress_small=True)
-
-
-  # fname = "Data/users.dat"
-  # name = "Data/trim/users_5551_papers_{0}_libsize_{1}.dat".format(trimmed_papers_count, threshold_lib_size)
-  # trim_users_data(fname, name);
-
-  # dname = "Data/trim/users_5551_papers_{0}_libsize_{1}.dat".format(trimmed_papers_count, threshold_lib_size)
-  # split_users_data(dname)
-
-  # read_generated_csv()
-  # #
-  # print(read_generated_csv())
-  # print(read_generated_csv_dictionary())
+# X = read_and_create_user_Matrix()
+# print(X.shape)
+# print(str(X[0]))
+# # # str = np.array2string(X[21], precision=2, separator=',',suppress_small=True)
 
 
-  # p, t, pin = read_generated_user_test_pred_dictionary()
-  # print('pred len '+str(len(p)))
-  # print('test len '+str(len(t)))
-  # print(p[21])
-  # print(t[21])
-  # print(pin[21])
+# name = "Data/trim/users_5551_papers_{0}.dat".format(config.trimmed_papers_count)
+# trim_users_data(source_data_file, name);
 
-  # create_trimmed_train_users_data()
-  # create_trimmed_test_users_data()
+# dname = "Data/trim/users_5551_papers_{0}_libsize_{1}.dat".format(config.trimmed_papers_count, config.lib_size_threshold)
+# split_users_data(dname)
 
-  # read_and_create_paper_wordFreqCount()
+# read_generated_csv()
+# #
+# print(read_generated_csv())
+# print(read_generated_csv_dictionary())
 
-  # tf = read_and_create_term_frequency()
-  # print(tf.shape)
-  # print(tf[0])
-  # print(tf[tf.shape[0] - 1])
+# trim_users_data('Data/users.dat', 'Data/trim_users_5551_6000_papers_.dat')
+# split_users_data('Data/trim_users_5551_6000_papers_.dat')
+# trim_users_data(source_data_file, )
 
-  # df = read_and_create_document_frequency()
-  # print(df)
-  # print(df[0])
+# p, t, pin = read_generated_user_test_pred_dictionary()
+# print('pred len '+str(len(p)))
+# print('test len '+str(len(t)))
+# print(p[21])
+# print(t[21])
+# print(pin[21])
 
-  # ============================================
-  # run after the out.csv is generated
-  # ============================================
-  # right_now = "2018-04-16T23:10:42.536867"
-  # read_generated_csv_dictionary(right_now)
-  # read_generated_csv(right_now)
-  # preicsion(right_now)
-  # preicsion_M(right_now)
-  # recall(right_now)
-  # ============================================
+# create_trimmed_train_users_data()
+# create_trimmed_test_users_data()
 
-  ########################################################################
+# read_and_create_paper_wordFreqCount()
+
+# tf = tf_idf_papers_vs_words_freq()
+# print(type(tf))
+# # print(tf.shape)
+# # s = str(tf[0])
+# # print(s)
+# print(' bat ' * 5)
+# batches = np.array_split(tf, 3)
+# print(str(batches[0][0]))
+# df = read_and_create_document_frequency()
+# print(df)
+# print(df[0])
+# print(" zzzzzz "*5)
+
+# pfile = 'zzOutput/recall__2018-04-17T15:26:34.483896.dat'
+# R = get_cruve_readings(pfile)
+# print(R[0])
+# ============================================
+# run after the out.csv is generated
+# ============================================
+# right_now = "2018-04-18T17:06:03.667176"
+# pred, test, pred_tuples = read_generated_user_test_pred_dictionary(right_now)
+# read_generated_csv_dictionary(right_now)
+# read_generated_csv(right_now)
+# preicsion(pred, test, pred_tuples, right_now)
+# preicsion_M(pred, test, pred_tuples, right_now)
+# recall(pred, test, pred_tuples, right_now)
+# ============================================
+
+########################################################################

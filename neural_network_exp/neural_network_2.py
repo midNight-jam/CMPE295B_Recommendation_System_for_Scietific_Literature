@@ -3,27 +3,34 @@ import tensorflow as tf
 import pandas as pd
 import numpy as np
 import datetime
+import svd_rec
+import config
 
 
-train_file_name = "Data/trim/users_5551_papers_6000_libsize_15_train_0.25_.dat"
-matrix = data.read_and_create_trimmed_user_Matrix(train_file_name, data.trimmed_users_count, data.trimmed_papers_count)
-
-print('*' * 9)
+matrix = data.read_and_create_user_Matrix()
+print('-' * 30)
 print('SHape of matrix from data.py')
 print(matrix.shape)
-print('*' * 9)
-# print(["%d" % x for x in matrix[0]])
-print('*' * 29)
-right_now = str(datetime.datetime.now().isoformat())
+print('-' * 30)
+
+print('-' * 30)
+print(config.right_now)
+print('-' * 30)
 
 
-num_input = 6000    # which is - data.trimmed_papers_count = 6000
+num_input = config.numbers_papers
+
 num_hidden_4=4096
 num_hidden_3=2048
 num_hidden_2=1024
 num_hidden_1=512
 
 X = tf.placeholder(tf.float64, [None, num_input])
+
+print(X.shape)
+print('-' * 30)
+
+# quit()
 
 weights = {
     'encoder_h4': tf.Variable(tf.random_normal([num_input, num_hidden_4], dtype=tf.float64)),
@@ -64,7 +71,7 @@ def decoder(x):
     return layer_1
 
 
-# Construct model
+# Construct models
 encoder_op = encoder(X)
 decoder_op = decoder(encoder_op)
 
@@ -102,57 +109,65 @@ local_init = tf.local_variables_initializer()
 
 losses_plot = []
 
+prev_loss = 0.0
+
+print('running....')
 with tf.Session() as session:
-    epochs = 10
-    batch_size = 32
+    epochs = config.epoch
+    batch_size = config.batch_size
 
     session.run(init)
     session.run(local_init)
 
     num_batches = int(matrix.shape[0] / batch_size)
-    matrix = np.array_split(matrix, batch_size)
+    batches = np.array_split(matrix, batch_size)
 
     for i in range(epochs):
 
         avg_cost = 0
 
-        for batch in matrix:
+        for batch in batches:
             _, l = session.run([optimizer, loss], feed_dict={X: batch})
             avg_cost += l
 
-
+        prev_loss = avg_cost
         avg_cost /= num_batches
 
         print("Epoch: {} Loss: {}".format(i + 1, avg_cost))
+
+        # if(avg_cost - prev_loss < 0.001):
+        #     print('Loss i < 0.001 prev : {0}  cur : {1}  [breaking]'.format(prev_loss, avg_cost))
+        #     break
         losses_plot.append(avg_cost)
 
     print("Predictions...")
 
-    matrix = np.concatenate(matrix, axis=0)
+    matrix = np.concatenate(batches, axis=0)
 
     preds = session.run(decoder_op, feed_dict={X: matrix})
     
-    preds[preds<=0.01]=0.0
+    # preds[preds<=0.01]=0.0
     # preds = preds.astype('<H')
     
     predictions = predictions.append(pd.DataFrame(preds))
 
-    print(predictions)
+    print('Generated Predictions Shape After Atuoencoders: ',predictions.shape)
+
+
+    # now doing the matrix factorization
+
+    predictions = svd_rec.process(predictions)
+
+    predictions.to_csv(config.autoencoders_output_file, header=False, index=False)
+    print('to csv complete')
     
-    predictions.to_csv('out__'+right_now+'.csv', header=False, index=False)
+    # loss_file = open(config.autoencoders_training_loss_readings_file,"w")
     
-    loss_name = 'loss_plot__'+right_now+'.dat'
-    loss_file = open(loss_name,"w")
-    for lp in losses_plot:
-        loss_file.write('{0}\n'.format((lp)))
-    loss_file.close()
+    # for lp in losses_plot:
+    #     loss_file.write('{0}\n'.format((lp)))
+    
+    # loss_file.close()
 
 ################################################
 ## Persist the results
 ################################################
-    pred, test, pred_tuples = data.read_generated_user_test_pred_dictionary(right_now)
-    data.read_generated_csv_dictionary(right_now)
-    data.read_generated_csv(right_now)
-    data.preicsion(pred, test, pred_tuples, right_now)
-    data.preicsion_M(pred, test, pred_tuples, right_now)
-    data.recall(pred, test, pred_tuples, right_now)

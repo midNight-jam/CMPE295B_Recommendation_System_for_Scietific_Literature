@@ -62,7 +62,7 @@ def decoder(x):
     layer_3 = tf.nn.sigmoid(tf.add(tf.matmul(layer_2, weights['decoder_h3']), biases['decoder_b3']))
     return layer_3
 
-# Construct model
+# Construct models
 
 encoder_op = encoder(X)
 decoder_op = decoder(encoder_op)
