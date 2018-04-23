@@ -1,8 +1,8 @@
 #!/bin/bash
 #
 #SBATCH --job-name=orion
-SBATCH -o  /data/cmpe295-Eirinaki/Rec_Sys_Sci_Litr/scripts/logs.txt
-SBATCH -e /data/cmpe295-Eirinaki/Rec_Sys_Sci_Litr/scripts/errors.txt
+SBATCH -o  /data/cmpe295-Eirinaki/Rec_Sys_Sci_Litr/logs/logs.txt
+SBATCH -e /data/cmpe295-Eirinaki/Rec_Sys_Sci_Litr/logs/errors.txt
 #
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
