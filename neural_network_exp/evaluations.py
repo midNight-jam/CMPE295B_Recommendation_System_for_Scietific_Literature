@@ -220,10 +220,10 @@ def recall(pred, test):
 
 
 def process():
-  X_pred, X_train = read_predictions_and_test()
-  precision(X_pred, X_train)
-  precision_M(X_pred, X_train)
-  recall(X_pred, X_train)
+  X_pred, X_test = read_predictions_and_test()
+  precision(X_pred, X_test)
+  precision_M(X_pred, X_test)
+  recall(X_pred, X_test)
 
 
 

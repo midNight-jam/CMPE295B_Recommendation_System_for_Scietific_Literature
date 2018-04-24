@@ -9,7 +9,7 @@ right_now = right_now.replace("-","_")
 # right_now = '2018_04_21T17_02_21_754258'
 
 numbers_users = 5551
-numbers_papers = 6001
+numbers_papers = 16980
 number_words = 8000
 number_latent_factors = 2500
 top_k_products = 35
@@ -34,12 +34,13 @@ recall_readings_output_file = output_dir + "recall__readings__" + right_now + ".
 
 svd_output_file = output_dir + "svd__" + right_now + ".dat"
 sample_svd_output_file = output_dir + "svd__sample__" + right_now + ".dat"
+
 trimmed_users_count = 5551
 trimmed_papers_count = 6001
 
 rating_threshold = 0.0
 lib_size_threshold = 10
-test_train_split = 0.30
+test_train_split = 0.25
 
 
 
