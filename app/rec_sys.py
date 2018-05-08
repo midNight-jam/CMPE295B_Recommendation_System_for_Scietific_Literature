@@ -7,7 +7,7 @@ doc_info_file = 'data/raw-data.csv'
 content_ml_output_file = 'data/content_ml_app_out.dat'
 user_collab_ml_output_file = 'data/user_collab_ml_app_output.dat'
 autoenco_mf_output_file = 'data/autenco_mf_app_output.dat'
-test_file = 'data/ordered-users_test_0.25_.dat'
+test_file = 'data/ordered-users.dat'
 
 most_rec = 3
 
@@ -22,8 +22,9 @@ def print_meta():
 
 print('\n'*3)
 table = BeautifulTable()
-table.column_headers = ["model", "paperId", "title", "present in library"]
-
+table.column_headers = ["model", "paperId", "Title", "Present"]
+table.column_alignments['Title'] = BeautifulTable.ALIGN_LEFT
+table.column_alignments['Present'] = BeautifulTable.ALIGN_RIGHT
 
 # get the content of line from the given file as INTEGERS
 def get_line_from_file(file, id):
