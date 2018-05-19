@@ -18,9 +18,9 @@ def print_meta():
   meta.column_alignments['Model'] = BeautifulTable.ALIGN_LEFT
   meta.column_alignments['Name'] = BeautifulTable.ALIGN_LEFT
   meta.append_row(["CDL","Collaborative Deep Learning"])
-  meta.append_row(["CUDL","Collaborative User Based DL Model"])
-  meta.append_row(["COML","Content Based ML Model"])
-  meta.append_row(["CUML","Collaborative User Based ML Model"])
+  meta.append_row(["AutoEncoderSVD","Collaborative User Based DL Model"])
+  meta.append_row(["ContentML","Content Based ML Model"])
+  meta.append_row(["SVD","Collaborative User Based ML Model"])
   print(meta)
   print('\n\n')
 
@@ -67,7 +67,7 @@ def get_line_from_file(file, id):
 def read_doc_info(docId):
   i = 0
   docs = []
-  f = open(doc_info_file)
+  f = open(doc_info_file, encoding ='utf-8')
   for line in f:
     docs = line.split(",")
     if (i == docId):
@@ -87,7 +87,7 @@ def check_in_lib(userId, docId):
 def add_content_ml_output(userId):
   docs = get_line_from_file(content_ml_output_file, userId)
   top_rec = docs[:most_rec]
-  add_docs_to_result("COML", userId, top_rec)
+  add_docs_to_result("ContentML", userId, top_rec)
 
 
 # reads the output of content ML and gets the predicted docs for the given user
@@ -95,14 +95,14 @@ def add_user_collab_ml_output(userId):
   docs = get_line_from_file(user_collab_ml_output_file, userId)
   docs.pop(0) # removing the count
   top_rec = docs[:most_rec]
-  add_docs_to_result("CUML", userId, top_rec)
+  add_docs_to_result("SVD", userId, top_rec)
 
 # reads the output of auto enco + mf and gets the predicted docs for the given user
 def add_auto__enco_mf_output(userId):
   docs = get_line_from_file(autoenco_mf_output_file, userId)
   docs.pop(0) # removing the count
   top_rec = docs[:most_rec]
-  add_docs_to_result("CUDL", userId, top_rec)
+  add_docs_to_result("AutoEncoderSVD", userId, top_rec)
 
 # reads the output of CDL and gets the predicted docs for the given user
 def add_cdl_output(userId):
