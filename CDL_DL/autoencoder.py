@@ -1,192 +1,212 @@
-# pylint: skip-file
-import mxnet as mx
-from mxnet import misc
-import numpy as np
-import model
-import logging
 from solver import Solver, Monitor
 try:
    import cPickle as pickle
 except:
    import pickle
+import numpy as np
+import model
+import logging
+import mxnet as mx
+from mxnet import misc
 
-class AutoEncoderModel(model.MXModel):
-    def setup(self, dims, sparseness_penalty=None, pt_dropout=None, ft_dropout=None, input_act=None, internal_act='relu', output_act=None):
-        self.N = len(dims) - 1
-        self.dims = dims
-        self.stacks = []
-        self.pt_dropout = pt_dropout
-        self.ft_dropout = ft_dropout
-        self.input_act = input_act
-        self.internal_act = internal_act
-        self.output_act = output_act
 
-        self.data = mx.symbol.Variable('data')
+class EncoderProto(model.MXModel):
+
+	def setup(self, dimension , penalty_sparse=None, dropout_pt=None, dropout_ft=None, in_act=None, inter_act='relu', o_act=None):
+        
+        self.dimension = dimension
+        self.dropout_ft = dropout_ft
+        self.dropout_pt = dropout_pt
+        self.inter_act = inter_act
+        self.in_act = in_act
+        self.o_act = o_act
+        self.N = len(dimension) - 1
+        self.stack = []
+
         self.V = mx.symbol.Variable('V')
         self.lambda_v_rt = mx.symbol.Variable('lambda_v_rt')
+        self.data = mx.symbol.Variable('data')
+        
+        
         for i in range(self.N):
             if i == 0:
-                decoder_act = input_act
-                idropout = None
+                d_act = in_act
+                idrop = None
             else:
-                decoder_act = internal_act
-                idropout = pt_dropout
+                d_act = inter_act
+                idrop = dropout_pt
             if i == self.N-1:
-                encoder_act = output_act
-                odropout = None
+                e_act = o_act
+                odrop = None
             else:
-                encoder_act = internal_act
-                odropout = pt_dropout
-            istack, iargs, iargs_grad, iargs_mult, iauxs = self.make_stack(i, self.data, dims[i], dims[i+1],
-                                                sparseness_penalty, idropout, odropout, encoder_act, decoder_act)
-            self.stacks.append(istack)
-            self.args.update(iargs)
-            self.args_grad.update(iargs_grad)
-            self.args_mult.update(iargs_mult)
-            self.auxs.update(iauxs)
-        self.encoder, self.internals = self.make_encoder(self.data, dims, sparseness_penalty, ft_dropout, internal_act, output_act)
-        self.decoder = self.make_decoder(self.encoder, dims, sparseness_penalty, ft_dropout, internal_act, input_act)
-        if input_act == 'softmax':
-            self.loss = self.decoder
+                e_act = inter_act
+                odrop = dropout_pt
+
+
+            stack_i, args_i, grad_iargs, mult_iargs, aux_i = self.stack_make(i, self.data, dimension[i], dimension[i+1],
+                                                penalty_sparse, idrop, odrop, e_act, d_act)
+            self.stack.append(stack_i)
+            self.args.update(args_i)
+            self.args_grad.update(grad_iargs)
+            self.args_mult.update(mult_iargs)
+            self.auxs.update(aux_i)
+        self.enc, self.internals = self.make_encoder(self.data, dimension, penalty_sparse, ft_dropout, inter_act, o_act)
+        self.dec = self.make_decoder(self.encoder, dimension, penalty_sparse, ft_dropout, inter_act, in_act)
+
+
+        if in_act == 'softmax':
+            self.valueLoss = self.decoder
         else:
-            #fe_loss = mx.symbol.LinearRegressionOutput(data=1*self.encoder,
-            #    label=1*self.V)
-            fe_loss = mx.symbol.LinearRegressionOutput(data=self.lambda_v_rt*self.encoder,
+            loss_fe = mx.symbol.LinearRegressionOutput(data=self.lambda_v_rt*self.enc,
                 label=self.lambda_v_rt*self.V)
-            fr_loss = mx.symbol.LinearRegressionOutput(data=self.decoder, label=self.data)
-            self.loss = mx.symbol.Group([fe_loss, fr_loss])
+            loss_fr = mx.symbol.LinearRegressionOutput(data=self.dec, label=self.data)
+            self.valueLoss = mx.symbol.Group([loss_fe, loss_fr])
 
-    def make_stack(self, istack, data, num_input, num_hidden, sparseness_penalty=None, idropout=None,
+    def stack_make(self, sti, datapoints, total_input, total_hidden, penalty_sparse=None, idrop=None,
                    odropout=None, encoder_act='relu', decoder_act='relu'):
-        x = data
-        if idropout:
-            x = mx.symbol.Dropout(data=x, p=idropout)
-        x = mx.symbol.FullyConnected(name='encoder_%d'%istack, data=x, num_hidden=num_hidden)
+        val = data
+        # if value is dropout
+        if idrop:
+            val = mx.symbol.Dropout(data=val, p=idrop)
+        val = mx.symbol.FullyConnected(name='encoder_%d'%sti, data=val, total_hidden=total_hidden)
+        # if encoder is activated
         if encoder_act:
-            x = mx.symbol.Activation(data=x, act_type=encoder_act)
-            if encoder_act == 'sigmoid' and sparseness_penalty:
-                x = mx.symbol.IdentityAttachKLSparseReg(data=x, name='sparse_encoder_%d' % istack, penalty=sparseness_penalty)
+            val = mx.symbol.Activation(data=val, act_type=encoder_act)
+            if encoder_act == 'sigmoid' and penalty_sparse:
+                val = mx.symbol.IdentityAttachKLSparseReg(data=val, name='sparse_encoder_%d' % sti, penalty=penalty_sparse)
+        # if there is a dropout
         if odropout:
-            x = mx.symbol.Dropout(data=x, p=odropout)
-        x = mx.symbol.FullyConnected(name='decoder_%d'%istack, data=x, num_hidden=num_input)
-        if decoder_act == 'softmax':
-            x = mx.symbol.Softmax(data=x, label=data, prob_label=True, act_type=decoder_act)
+            val = mx.symbol.Dropout(data=val, p=odropout)
+        val = mx.symbol.FullyConnected(name='decoder_%d'%sti, data=val, total_hidden=total_input)
+        # if decoder act is softmaval
+        if decoder_act == 'softmaval':
+            val = mx.symbol.Softmax(data=val, label=datapoints, prob_label=True, act_type=decoder_act)
+        # if decoder act is sigmoid
         elif decoder_act:
-            x = mx.symbol.Activation(data=x, act_type=decoder_act)
-            if decoder_act == 'sigmoid' and sparseness_penalty:
-                x = mx.symbol.IdentityAttachKLSparseReg(data=x, name='sparse_decoder_%d' % istack, penalty=sparseness_penalty)
-            x = mx.symbol.LinearRegressionOutput(data=x, label=data)
+            val = mx.symbol.Activation(data=val, act_type=decoder_act)
+            if decoder_act == 'sigmoid' and penalty_sparse:
+                val = mx.symbol.IdentityAttachKLSparseReg(data=val, name='sparse_decoder_%d' % sti, penalty=penalty_sparse)
+            val = mx.symbol.LinearRegressionOutput(data=val, label=datapoints)
         else:
-            x = mx.symbol.LinearRegressionOutput(data=x, label=data)
+            val = mx.symbol.LinearRegressionOutput(data=val, label=data)
 
-        args = {'encoder_%d_weight'%istack: mx.nd.empty((num_hidden, num_input), self.xpu),
-                'encoder_%d_bias'%istack: mx.nd.empty((num_hidden,), self.xpu),
-                'decoder_%d_weight'%istack: mx.nd.empty((num_input, num_hidden), self.xpu),
-                'decoder_%d_bias'%istack: mx.nd.empty((num_input,), self.xpu),}
-        args_grad = {'encoder_%d_weight'%istack: mx.nd.empty((num_hidden, num_input), self.xpu),
-                     'encoder_%d_bias'%istack: mx.nd.empty((num_hidden,), self.xpu),
-                     'decoder_%d_weight'%istack: mx.nd.empty((num_input, num_hidden), self.xpu),
-                     'decoder_%d_bias'%istack: mx.nd.empty((num_input,), self.xpu),}
-        args_mult = {'encoder_%d_weight'%istack: 1.0,
-                     'encoder_%d_bias'%istack: 2.0,
-                     'decoder_%d_weight'%istack: 1.0,
-                     'decoder_%d_bias'%istack: 2.0,}
+        args = {'%d_weight'%sti: mx.nd.empty((total_hidden, total_input), self.xpu),
+                '%d_bias'%sti: mx.nd.empty((total_hidden,), self.xpu),
+                '%d_weight'%sti: mx.nd.empty((total_input, total_hidden), self.xpu),
+                '_%d_bias'%sti: mx.nd.empty((total_input,), self.xpu),}
+        args_grad = {'%d_weight'%sti: mx.nd.empty((total_hidden, total_input), self.xpu),
+                     '%d_bias'%sti: mx.nd.empty((total_hidden,), self.xpu),
+                     '%d_weight'%sti: mx.nd.empty((total_input, total_hidden), self.xpu),
+                     '%d_bias'%sti: mx.nd.empty((total_input,), self.xpu),}
+        args_mult = {'%d_weight'%sti: 1.0,
+                     '%d_bias'%sti: 2.0,
+                     '%d_weight'%sti: 1.0,
+                     '%d_bias'%sti: 2.0,}
         auxs = {}
-        if encoder_act == 'sigmoid' and sparseness_penalty:
-            auxs['sparse_encoder_%d_moving_avg' % istack] = mx.nd.ones((num_hidden), self.xpu) * 0.5
-        if decoder_act == 'sigmoid' and sparseness_penalty:
-            auxs['sparse_decoder_%d_moving_avg' % istack] = mx.nd.ones((num_input), self.xpu) * 0.5
+        if decoder_act == 'sigmoid' and penalty_sparse:
+            auxs['%d_moving_avg' % sti] = mx.nd.ones((total_input), self.xpu) * 0.5
+        if encoder_act == 'sigmoid' and penalty_sparse:
+            auxs['%d_moving_avg' % sti] = mx.nd.ones((total_hidden), self.xpu) * 0.5 
         init = mx.initializer.Uniform(0.07)
         for k,v in args.items():
             init(k,v)
 
-        return x, args, args_grad, args_mult, auxs
+        return val, args, args_grad, args_mult, auxs
 
-    def make_encoder(self, data, dims, sparseness_penalty=None, dropout=None, internal_act='relu', output_act=None):
-        x = data
+    def make_encoder(self, data, dimensions, penalty_sparse=None, dropout=None, i_act='relu', o_act=None):
+        val = data
         internals = []
-        N = len(dims) - 1
+        N = len(dimensions) - 1
         for i in range(N):
-            x = mx.symbol.FullyConnected(name='encoder_%d'%i, data=x, num_hidden=dims[i+1])
-            if internal_act and i < N-1:
-                x = mx.symbol.Activation(data=x, act_type=internal_act)
-                if internal_act=='sigmoid' and sparseness_penalty:
-                    x = mx.symbol.IdentityAttachKLSparseReg(data=x, name='sparse_encoder_%d' % i, penalty=sparseness_penalty)
-            elif output_act and i == N-1:
-                x = mx.symbol.Activation(data=x, act_type=output_act)
-                if output_act=='sigmoid' and sparseness_penalty:
-                    x = mx.symbol.IdentityAttachKLSparseReg(data=x, name='sparse_encoder_%d' % i, penalty=sparseness_penalty)
+            val = mx.symbol.FullyConnected(name='encoder_%d'%i, data=val, total_hidden=dimensions[i+1])
+            if i_act and i < N-1:
+                val = mx.symbol.Activation(data=val, act_type=i_act)
+                #if the function is sigmoid and penalty is sparse
+                if i_act=='sigmoid' and penalty_sparse:
+                    val = mx.symbol.IdentityAttachKLSparseReg(data=val, name='%d' % i, penalty=penalty_sparse)
+            elif o_act and i == N-1:
+                val = mx.symbol.Activation(data=val, act_type=o_act)
+                #if the penalty is sigmoid and the penalty is sparse
+                if o_act=='sigmoid' and penalty_sparse:
+                    val = mx.symbol.IdentityAttachKLSparseReg(data=val, name='%d' % i, penalty=penalty_sparse)
             if dropout:
-                x = mx.symbol.Dropout(data=x, p=dropout)
-            internals.append(x)
-        return x, internals
+                val = mx.symbol.Dropout(data=val, p=dropout)
+            internals.append(val)
+        return val, internals
 
-    def make_decoder(self, feature, dims, sparseness_penalty=None, dropout=None, internal_act='relu', input_act=None):
-        x = feature
-        N = len(dims) - 1
+    def make_decoder(self, totalfeatures, dimensions, penalty_sparse=None, dropout=None, i_act='relu', in_act=None):
+        val = totalfeatures
+        N = len(dimensions) - 1
+        #for all i values
         for i in reversed(range(N)):
-            x = mx.symbol.FullyConnected(name='decoder_%d'%i, data=x, num_hidden=dims[i])
-            if internal_act and i > 0:
-                x = mx.symbol.Activation(data=x, act_type=internal_act)
-                if internal_act=='sigmoid' and sparseness_penalty:
-                    x = mx.symbol.IdentityAttachKLSparseReg(data=x, name='sparse_decoder_%d' % i, penalty=sparseness_penalty)
-            elif input_act and i == 0:
-                x = mx.symbol.Activation(data=x, act_type=input_act)
-                if input_act=='sigmoid' and sparseness_penalty:
-                    x = mx.symbol.IdentityAttachKLSparseReg(data=x, name='sparse_decoder_%d' % i, penalty=sparseness_penalty)
+            val = mx.symbol.FullyConnected(name='decoder_%d'%i, data=val, total_hidden=dimensions[i])
+            if i_act and i > 0:
+                val = mx.symbol.Activation(data=val, act_type=i_act)
+                # if the function is sigmoid and the penalty is sparse
+                if i_act=='sigmoid' and penalty_sparse:
+                    val = mx.symbol.IdentityAttachKLSparseReg(data=val, name='%d' % i, penalty=penalty_sparse)
+            elif in_act and i == 0:
+                val = mx.symbol.Activation(data=val, act_type=in_act)
+                # if the function is sigmoid and the penalty is sparse
+                if in_act=='sigmoid' and penalty_sparse:
+                    val = mx.symbol.IdentityAttachKLSparseReg(data=val, name='%d' % i, penalty=penalty_sparse)
             if dropout and i > 0:
-                x = mx.symbol.Dropout(data=x, p=dropout)
-        return x
+                val = mx.symbol.Dropout(data=val, p=dropout)
+        return val
 
-    def layerwise_pretrain(self, X, batch_size, n_iter, optimizer, l_rate, decay, lr_scheduler=None):
+    def layerwise_pretrain(self, X, b_size, total_iter, opti, l_rate, decay, scheduler_lr=None):
         def l2_norm(label, pred):
             return np.mean(np.square(label-pred))/2.0
-        solver = Solver(optimizer, momentum=0.9, wd=decay, learning_rate=l_rate, lr_scheduler=lr_scheduler)
+        solver = Solver(opti, momentum=0.9, wd=decay, learning_rate=l_rate, scheduler_lr=scheduler_lr)
+        # procedding solver.set_metric
         solver.set_metric(mx.metric.CustomMetric(l2_norm))
+        # procedding solver.set_monitor
         solver.set_monitor(Monitor(1000))
-        data_iter = mx.io.NDArrayIter({'data': X}, batch_size=batch_size, shuffle=True,
+        # procedding solver. data_iter
+        data_iter = mx.io.NDArrayIter({'data': X}, b_size=b_size, shuffle=True,
                                       last_batch_handle='roll_over')
+        # processing all is in range
         for i in range(self.N):
             if i == 0:
                 data_iter_i = data_iter
             else:
                 X_i = model.extract_feature(self.internals[i-1], self.args, self.auxs,
                                             data_iter, X.shape[0], self.xpu).values()[0]
-                data_iter_i = mx.io.NDArrayIter({'data': X_i}, batch_size=batch_size,
+                data_iter_i = mx.io.NDArrayIter({'data': X_i}, b_size=b_size,
                                                 last_batch_handle='roll_over')
             logging.info('Pre-training layer %d...'%i)
             solver.solve(self.xpu, self.stacks[i], self.args, self.args_grad, self.auxs, data_iter_i,
-                         0, n_iter, {}, False)
+                         0, total_iter, {}, False)
 
-    def finetune(self, X, R, V, lambda_v_rt, lambda_u, lambda_v, dir_save, batch_size, n_iter, optimizer, l_rate, decay, lr_scheduler=None):
+    def finetune(self, X, R, V, lambda_v_rt, lambda_u, lambda_v, dir_save, b_size, total_iter, opti, l_rate, decay, scheduler_lr=None):
         def l2_norm(label, pred):
             print(type(label))
             print(type(pred))
             print(np.shape(label))
             print(np.shape(pred))
             return np.mean(np.square(label-pred))/2.0
-        solver = Solver(optimizer, momentum=0.9, wd=decay, learning_rate=l_rate, lr_scheduler=lr_scheduler)
+        solver = Solver(opti, momentum=0.9, wd=decay, learning_rate=l_rate, scheduler_lr=scheduler_lr)
         solver.set_metric(mx.metric.CustomMetric(l2_norm))
         solver.set_monitor(Monitor(1000))
         data_iter = mx.io.NDArrayIter({'data': X, 'V': V, 'lambda_v_rt':
             lambda_v_rt},
-                batch_size=batch_size, shuffle=False,
+                b_size=b_size, shuffle=False,
                 last_batch_handle='pad')
         logging.info('Fine tuning...')
         # self.loss is the net
         U, V, theta, BCD_loss = solver.solve(X, R, V, lambda_v_rt, lambda_u,
-            lambda_v, dir_save, batch_size, self.xpu, self.loss, self.args, self.args_grad, self.auxs, data_iter,
-            0, n_iter, {}, False)
+            lambda_v, dir_save, b_size, self.xpu, self.loss, self.args, self.args_grad, self.auxs, data_iter,
+            0, total_iter, {}, False)
         return U, V, theta, BCD_loss
 
     # modified by hog
     def eval(self, X, V, lambda_v_rt):
-        batch_size = 100
+        b_size = 100
         data_iter = mx.io.NDArrayIter({'data': X, 'V': V, 'lambda_v_rt':
             lambda_v_rt},
-            batch_size=batch_size, shuffle=False,
+            b_size=b_size, shuffle=False,
             last_batch_handle='pad')
         # modified by hog
         Y = model.extract_feature(self.loss[1], self.args, self.auxs, data_iter,
                                  X.shape[0], self.xpu).values()[0]
-        return np.sum(np.square(Y-X))/2.0
+        return np.sum(np.square(Y-X))/2.
